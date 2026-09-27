@@ -1,0 +1,27 @@
+openapi: 3.0.3
+info:
+  title: EMTAF School Service API
+  version: 1.5.0
+servers:
+  - url: /api/v1/school
+security:
+  - bearerAuth: []
+paths:
+  /me: {get: {summary: Current tenant membership context, responses: {'200': {description: OK}}}}
+  /dashboard: {get: {summary: Tenant dashboard, responses: {'200': {description: OK}}}}
+  /students:
+    get: {summary: List students, responses: {'200': {description: OK}}}
+    post: {summary: Create student, responses: {'201': {description: Created}}}
+  /teachers:
+    get: {summary: List teachers, responses: {'200': {description: OK}}}
+    post: {summary: Create teacher, responses: {'201': {description: Created}}}
+  /classes:
+    get: {summary: List classes, responses: {'200': {description: OK}}}
+    post: {summary: Create class, responses: {'201': {description: Created}}}
+  /enrollments: {post: {summary: Enroll student, responses: {'201': {description: Created}}}}
+  /attendance: 
+    get: {summary: List attendance, responses: {'200': {description: OK}}}
+    post: {summary: Mark attendance, responses: {'201': {description: Created}}}
+components:
+  securitySchemes:
+    bearerAuth: {type: http, scheme: bearer, bearerFormat: JWT}

@@ -1,0 +1,6 @@
+const test=require('node:test'); const assert=require('node:assert/strict'); const fs=require('node:fs'); const path=require('node:path');
+const root=path.resolve(__dirname,'..');
+test('two independently deployable domain services exist',()=>{for(const s of ['hospital-service','school-service']){assert.ok(fs.existsSync(path.join(root,'domains',s,'Dockerfile')));assert.ok(fs.existsSync(path.join(root,'domains',s,'package.json')));assert.ok(fs.existsSync(path.join(root,'domains',s,'helm','Chart.yaml')))}});
+test('tenant isolation is represented in domain schemas',()=>{for(const f of ['domains/hospital-service/migrations/001.sql','domains/school-service/migrations/001.sql']){const s=fs.readFileSync(path.join(root,f),'utf8');assert.match(s,/tenant_id uuid NOT NULL REFERENCES tenants\(id\)/)}});
+test('kubernetes has dev staging prod overlays',()=>{for(const e of ['dev','staging','prod'])assert.ok(fs.existsSync(path.join(root,'infra','kubernetes','overlays',e,'kustomization.yaml')))});
+test('no docker compose files',()=>{const hits=[];function walk(d){for(const x of fs.readdirSync(d,{withFileTypes:true})){const p=path.join(d,x.name);if(x.isDirectory())walk(p);else if(/docker-compose/i.test(x.name))hits.push(p)}}walk(root);assert.equal(hits.length,0)});

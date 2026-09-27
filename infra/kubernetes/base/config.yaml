@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata: {name: emtaf-platform-config, namespace: emtaf}
+data:
+  KAFKA_BROKERS: redpanda.emtaf.svc.cluster.local:9092
+  REDIS_URL: redis://redis.emtaf.svc.cluster.local:6379
+  DB_SSL: "false"
+---
+apiVersion: v1
+kind: Secret
+metadata: {name: emtaf-platform-secrets, namespace: emtaf}
+type: Opaque
+stringData:
+  DATABASE_URL: postgresql://emtaf:CHANGE_ME@postgres.emtaf.svc.cluster.local:5432/emtaf
+  JWT_SECRET: CHANGE_ME

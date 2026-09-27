@@ -1,0 +1,18 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: emtaf-migrations
+  namespace: emtaf
+spec:
+  backoffLimit: 4
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: migrate
+        image: ghcr.io/YOUR_ORG/emtaf-migrations:1.0.0
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef: {name: emtaf-platform-secrets, key: DATABASE_URL}
+        command: ["/app/migrate.sh"]

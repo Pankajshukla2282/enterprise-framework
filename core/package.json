@@ -1,0 +1,1 @@
+{"name":"@emtaf/core","version":"1.0.0","main":"dist/index.js","types":"dist/index.d.ts","scripts":{"build":"tsc -p tsconfig.json"},"dependencies":{"ioredis":"^5.4.1","jsonwebtoken":"^9.0.2","pg":"^8.13.1","kafkajs":"^2.2.4"},"devDependencies":{"@types/jsonwebtoken":"^9.0.7","@types/node":"^22.10.2","@types/pg":"^8.11.10","typescript":"^5.7.2"}}

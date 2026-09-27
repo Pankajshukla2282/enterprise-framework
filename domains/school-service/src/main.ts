@@ -1,0 +1,34 @@
+import express from 'express';
+import helmet from 'helmet';
+import client from 'prom-client';
+import { db, audit, events } from '@emtaf/core';
+import { context, permission, error, json } from '@emtaf/core/dist/http';
+
+const app=express();
+app.use(helmet()); app.use(express.json({limit:'1mb'})); client.collectDefaultMetrics();
+app.get('/health/live',(_,res)=>res.json({status:'ok',service:'school-service',version:'1.5.0'}));
+app.get('/health/ready',async(_,res)=>{try{await db.query('select 1');res.json({status:'ready'})}catch{res.status(503).json({status:'not-ready'})}});
+app.get('/metrics',async(_,res)=>{res.setHeader('Content-Type',client.register.contentType);res.end(await client.register.metrics())});
+app.use((req,res,next)=>{if(req.path.startsWith('/health')||req.path==='/metrics') return next(); context(req).then(()=>next()).catch(e=>error(res,e))});
+const tenant=(req:any)=>req.emtaf.tenantId;
+const run=(fn:any)=>(req:any,res:any)=>Promise.resolve().then(()=>fn(req,res)).catch(e=>error(res,e));
+const q=(req:any,sql:string,values:any[]=[])=>db.withTenant(tenant(req),c=>c.query(sql,values));
+const emit=(req:any,type:string,id:string,data:any)=>events.publish('school.domain.v1',{type,tenantId:tenant(req),aggregateId:id,data});
+
+app.get('/api/v1/school/me',(req,res)=>json(res,{userId:req.emtaf.userId,tenantId:tenant(req),roles:req.emtaf.roles}));
+app.get('/api/v1/school/dashboard',run(async(req,res)=>{permission('students:read')(req);const [s,c,a]=await Promise.all([q(req,"select count(*)::int count from school_students where status='active'"),q(req,"select count(*)::int count from school_classes where status='active'"),q(req,'select count(*)::int count from school_attendance where attendance_date=current_date')]);json(res,{students:s.rows[0].count,classes:c.rows[0].count,todaysAttendance:a.rows[0].count})}));
+
+app.get('/api/v1/school/students',run(async(req,res)=>{permission('students:read')(req);const limit=Math.min(Number(req.query.limit)||50,200);const r=await q(req,'select * from school_students where status=\'active\' order by created_at desc limit $1',[limit]);json(res,r.rows)}));
+app.post('/api/v1/school/students',run(async(req,res)=>{permission('students:write')(req);const b=req.body||{};if(!b.admission_no||!b.first_name||!b.last_name) return json(res,{error:'admission_no, first_name and last_name are required'},400);const r=await q(req,'insert into school_students(tenant_id,admission_no,first_name,last_name,phone,email,user_id) values($1,$2,$3,$4,$5,$6,$7) returning *',[tenant(req),b.admission_no,b.first_name,b.last_name,b.phone||null,b.email||null,b.user_id||null]);await audit('create',req.emtaf,'school_student',r.rows[0].id);await emit(req,'school.student.created',r.rows[0].id,r.rows[0]);json(res,r.rows[0],201)}));
+app.patch('/api/v1/school/students/:id',run(async(req,res)=>{permission('students:write')(req);const b=req.body||{};const r=await q(req,'update school_students set first_name=coalesce($2,first_name),last_name=coalesce($3,last_name),phone=coalesce($4,phone),email=coalesce($5,email),updated_at=now() where id=$1 and status=\'active\' returning *',[req.params.id,b.first_name,b.last_name,b.phone,b.email]);if(!r.rowCount)return json(res,{error:'Not found'},404);json(res,r.rows[0])}));
+app.delete('/api/v1/school/students/:id',run(async(req,res)=>{permission('students:write')(req);const r=await q(req,"update school_students set status='deleted',updated_at=now() where id=$1 and status='active' returning id",[req.params.id]);if(!r.rowCount)return json(res,{error:'Not found'},404);json(res,{deleted:true})}));
+
+app.get('/api/v1/school/teachers',run(async(req,res)=>{permission('students:read')(req);json(res,(await q(req,"select * from school_teachers where status='active' order by name")).rows)}));
+app.post('/api/v1/school/teachers',run(async(req,res)=>{permission('students:write')(req);const b=req.body||{};const r=await q(req,'insert into school_teachers(tenant_id,user_id,employee_no,name) values($1,$2,$3,$4) returning *',[tenant(req),b.user_id,b.employee_no,b.name]);json(res,r.rows[0],201)}));
+app.get('/api/v1/school/classes',run(async(req,res)=>{permission('students:read')(req);json(res,(await q(req,"select * from school_classes where status='active' order by academic_year,name,section")).rows)}));
+app.post('/api/v1/school/classes',run(async(req,res)=>{permission('students:write')(req);const b=req.body||{};const r=await q(req,'insert into school_classes(tenant_id,name,section,academic_year,class_teacher_id) values($1,$2,$3,$4,$5) returning *',[tenant(req),b.name,b.section,b.academic_year,b.class_teacher_id||null]);json(res,r.rows[0],201)}));
+app.post('/api/v1/school/enrollments',run(async(req,res)=>{permission('students:write')(req);const b=req.body||{};const r=await q(req,'insert into school_enrollments(tenant_id,student_id,class_id) values($1,$2,$3) returning *',[tenant(req),b.student_id,b.class_id]);json(res,r.rows[0],201)}));
+app.post('/api/v1/school/attendance',run(async(req,res)=>{permission('attendance:manage')(req);const b=req.body||{};const r=await q(req,'insert into school_attendance(tenant_id,student_id,class_id,attendance_date,status,marked_by) values($1,$2,$3,$4,$5,$6) on conflict(tenant_id,student_id,attendance_date) do update set status=excluded.status,class_id=excluded.class_id,marked_by=excluded.marked_by returning *',[tenant(req),b.student_id,b.class_id,b.attendance_date||new Date().toISOString().slice(0,10),b.status,req.emtaf.userId]);await emit(req,'school.attendance.marked',r.rows[0].id,r.rows[0]);json(res,r.rows[0],201)}));
+app.get('/api/v1/school/attendance',run(async(req,res)=>{permission('attendance:read')(req);const r=await q(req,'select * from school_attendance where attendance_date=coalesce($1::date,attendance_date) order by attendance_date desc limit 500',[req.query.date||null]);json(res,r.rows)}));
+
+const port=Number(process.env.PORT||3000);app.listen(port,()=>console.log(`school-service listening on ${port}`));

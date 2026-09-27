@@ -1,0 +1,6 @@
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE TABLE IF NOT EXISTS tenants(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),code text UNIQUE NOT NULL,name text NOT NULL,domain text,status text NOT NULL DEFAULT 'active',created_at timestamptz NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS users(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),email text UNIQUE NOT NULL,display_name text,status text NOT NULL DEFAULT 'active',created_at timestamptz NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS tenant_memberships(tenant_id uuid REFERENCES tenants(id) ON DELETE CASCADE,user_id uuid REFERENCES users(id) ON DELETE CASCADE,roles text[] NOT NULL DEFAULT '{}',status text NOT NULL DEFAULT 'active',PRIMARY KEY(tenant_id,user_id));
+CREATE TABLE IF NOT EXISTS platform_audit(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),tenant_id uuid NOT NULL REFERENCES tenants(id),user_id uuid REFERENCES users(id),action text NOT NULL,entity text NOT NULL,entity_id text NOT NULL,metadata jsonb NOT NULL DEFAULT '{}',created_at timestamptz NOT NULL DEFAULT now());
+CREATE INDEX IF NOT EXISTS idx_membership_user ON tenant_memberships(user_id); CREATE INDEX IF NOT EXISTS idx_audit_tenant_created ON platform_audit(tenant_id,created_at DESC);

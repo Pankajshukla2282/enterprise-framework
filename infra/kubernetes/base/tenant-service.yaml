@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: emtaf-tenant-service, namespace: emtaf}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: emtaf-tenant-service, namespace: emtaf, labels: {app: emtaf-tenant-service}}
+spec:
+  replicas: 2
+  selector: {matchLabels: {app: emtaf-tenant-service}}
+  template:
+    metadata: {labels: {app: emtaf-tenant-service}}
+    spec:
+      serviceAccountName: emtaf-tenant-service
+      containers:
+      - name: tenant-service
+        image: ghcr.io/your-org/emtaf-tenant-service:1.0.0
+        ports: [{containerPort: 3000}]
+        envFrom: [{configMapRef: {name: emtaf-platform-config}}, {secretRef: {name: emtaf-secrets}}]
+        resources: {requests: {cpu: 100m, memory: 128Mi}, limits: {cpu: 500m, memory: 512Mi}}
+        readinessProbe: {httpGet: {path: /health/ready, port: 3000}, initialDelaySeconds: 5, periodSeconds: 10}
+        livenessProbe: {httpGet: {path: /health/live, port: 3000}, initialDelaySeconds: 10, periodSeconds: 20}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: emtaf-tenant-service, namespace: emtaf}
+spec: {selector: {app: emtaf-tenant-service}, ports: [{port: 80, targetPort: 3000}]}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: {name: emtaf-tenant-service, namespace: emtaf}
+spec:
+  scaleTargetRef: {apiVersion: apps/v1, kind: Deployment, name: emtaf-tenant-service}
+  minReplicas: 2
+  maxReplicas: 8
+  metrics: [{type: Resource, resource: {name: cpu, target: {type: Utilization, averageUtilization: 70}}}]

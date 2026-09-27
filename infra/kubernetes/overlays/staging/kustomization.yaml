@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: emtaf
+resources:
+- ../../base
+images:
+- name: ghcr.io/YOUR_ORG/emtaf-tenant-service
+  newTag: staging
+- name: ghcr.io/YOUR_ORG/emtaf-hospital-service
+  newTag: staging
+- name: ghcr.io/YOUR_ORG/emtaf-school-service
+  newTag: staging
+- name: ghcr.io/YOUR_ORG/emtaf-college-service
+  newTag: staging
+- name: ghcr.io/YOUR_ORG/emtaf-hotel-service
+  newTag: staging

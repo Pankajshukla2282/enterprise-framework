@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: emtaf
+resources:
+- namespace.yaml
+- config.yaml
+- platform-infra.yaml
+- security.yaml
+- tenant-service.yaml
+- hospital-service.yaml
+- school-service.yaml
+- college-service.yaml
+- hotel-service.yaml
+- resource-limits.yaml
+- migration-job.yaml

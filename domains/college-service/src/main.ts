@@ -1,0 +1,14 @@
+import express from 'express'; import helmet from 'helmet'; import client from 'prom-client';
+import {db,audit} from '@emtaf/core'; import {context,permission,error,json} from '@emtaf/core/dist/http';
+const app=express(); app.use(helmet()); app.use(express.json()); client.collectDefaultMetrics();
+app.get('/health/live',(_,res)=>res.json({status:'ok',service:'college-service'}));
+app.get('/health/ready',async(_,res)=>{try{await db.query('select 1');res.json({status:'ready'})}catch{res.status(503).json({status:'not-ready'})}});
+app.get('/metrics',async(_,res)=>{res.setHeader('Content-Type',client.register.contentType);res.end(await client.register.metrics())});
+app.use((req,res,next)=>{if(req.path.startsWith('/health')||req.path==='/metrics')return next();context(req).then(()=>next()).catch(e=>error(res,e))});
+const t=(req:any)=>req.emtaf.tenantId;
+app.get('/api/v1/college/students',async(req,res)=>{try{permission('students:read')(req);const q=await db.withTenant(t(req),c=>c.query('select * from college_students where status=\'active\' order by created_at desc limit 200'));json(res,q.rows)}catch(e){error(res,e)}});
+app.post('/api/v1/college/students',async(req,res)=>{try{permission('students:write')(req);const b=req.body;const q=await db.withTenant(t(req),c=>c.query('insert into college_students(tenant_id,enrollment_no,status) values($1,$2,$3,$4,\'active\') returning *',[t(req),b.enrollment_no,b.first_name,b.last_name,b.phone,b.email]));await audit('create',req.emtaf,'college_students',q.rows[0].id);json(res,q.rows[0],201)}catch(e){error(res,e)}});
+app.patch('/api/v1/college/students/:id',async(req,res)=>{try{permission('students:write')(req);const b=req.body;const q=await db.withTenant(t(req),c=>c.query('update college_students set first_name=coalesce($2,first_name),last_name=coalesce($3,last_name),updated_at=now() where id=$1 and status=\'active\' returning *',[req.params.id,b.first_name,b.last_name]));if(!q.rowCount)return json(res,{error:'Not found'},404);json(res,q.rows[0])}catch(e){error(res,e)}});
+app.delete('/api/v1/college/students/:id',async(req,res)=>{try{permission('students:write')(req);const q=await db.withTenant(t(req),c=>c.query('update college_students set status=\'deleted\',updated_at=now() where id=$1 returning id',[req.params.id]));if(!q.rowCount)return json(res,{error:'Not found'},404);json(res,{deleted:true})}catch(e){error(res,e)}});
+app.get('/api/v1/college/me',async(req,res)=>json(res,{userId:req.emtaf.userId,tenantId:t(req),roles:req.emtaf.roles}));
+app.listen(Number(process.env.PORT||3000),()=>console.log('college-service listening'));

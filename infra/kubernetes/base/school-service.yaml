@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: school-service, namespace: emtaf}
+spec:
+ replicas: 2
+ selector: {matchLabels: {app: school-service}}
+ template:
+  metadata: {labels: {app.kubernetes.io/part-of: emtaf, app: school-service}}
+  spec:
+   serviceAccountName: emtaf-domain
+   containers:
+   - name: school-service
+     image: ghcr.io/YOUR_ORG/emtaf-school-service:1.5.0
+     envFrom: [{configMapRef: {name: emtaf-platform-config}}, {secretRef: {name: emtaf-platform-secrets}}]
+     ports: [{containerPort: 3000}]
+     resources: {requests: {cpu: 100m, memory: 128Mi}, limits: {cpu: 500m, memory: 512Mi}}
+     startupProbe: {httpGet: {path: /health/live, port: 3000}, failureThreshold: 30, periodSeconds: 5}
+     readinessProbe: {httpGet: {path: /health/ready, port: 3000}, periodSeconds: 10}
+     livenessProbe: {httpGet: {path: /health/live, port: 3000}, periodSeconds: 20}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: school-service, namespace: emtaf}
+spec: {selector: {app: school-service}, ports: [{name: http, port: 80, targetPort: 3000}]}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: {name: school-service, namespace: emtaf}
+spec:
+ scaleTargetRef: {apiVersion: apps/v1, kind: Deployment, name: school-service}
+ minReplicas: 2
+ maxReplicas: 10
+ behavior: {scaleUp: {stabilizationWindowSeconds: 30}, scaleDown: {stabilizationWindowSeconds: 300}}
+ metrics: [{type: Resource, resource: {name: cpu, target: {type: Utilization, averageUtilization: 70}}}, {type: Resource, resource: {name: memory, target: {type: Utilization, averageUtilization: 75}}}]

@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: postgres, namespace: emtaf}
+spec:
+ replicas: 1
+ selector: {matchLabels: {app: postgres}}
+ template:
+  metadata: {labels: {app.kubernetes.io/part-of: emtaf, app: postgres}}
+  spec:
+   containers:
+   - name: postgres
+     image: postgres:16-alpine
+     env:
+     - {name: POSTGRES_DB, value: emtaf}
+     - {name: POSTGRES_USER, value: emtaf}
+     - {name: POSTGRES_PASSWORD, valueFrom: {secretKeyRef: {name: postgres-secret, key: password}}}
+     ports: [{containerPort: 5432}]
+     resources: {requests: {cpu: 100m, memory: 256Mi}, limits: {cpu: 500m, memory: 512Mi}}
+     readinessProbe: {exec: {command: ["pg_isready","-U","emtaf","-d","emtaf"]}, initialDelaySeconds: 5, periodSeconds: 10}
+---
+apiVersion: v1
+kind: Secret
+metadata: {name: postgres-secret, namespace: emtaf}
+type: Opaque
+stringData: {password: CHANGE_ME}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: postgres, namespace: emtaf}
+spec: {selector: {app: postgres}, ports: [{port: 5432, targetPort: 5432}]}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: redis, namespace: emtaf}
+spec:
+ replicas: 1
+ selector: {matchLabels: {app: redis}}
+ template:
+  metadata: {labels: {app.kubernetes.io/part-of: emtaf, app: redis}}
+  spec:
+   containers:
+   - {name: redis, image: redis:7-alpine, ports: [{containerPort: 6379}], resources: {requests: {cpu: 50m, memory: 64Mi}, limits: {cpu: 250m, memory: 256Mi}}, readinessProbe: {exec: {command: ["redis-cli","ping"]}, periodSeconds: 10}}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: redis, namespace: emtaf}
+spec: {selector: {app: redis}, ports: [{port: 6379, targetPort: 6379}]}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: redpanda, namespace: emtaf}
+spec:
+ replicas: 1
+ selector: {matchLabels: {app: redpanda}}
+ template:
+  metadata: {labels: {app.kubernetes.io/part-of: emtaf, app: redpanda}}
+  spec:
+   containers:
+   - name: redpanda
+     image: docker.redpanda.com/redpandadata/redpanda:v24.3.5
+     command: ["rpk","redpanda","start","--overprovisioned","--smp","1","--memory","512M","--reserve-memory","0M","--node-id","0","--check=false"]
+     ports: [{containerPort: 9092}]
+     resources: {requests: {cpu: 250m, memory: 512Mi}, limits: {cpu: 1000m, memory: 1Gi}}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: redpanda, namespace: emtaf}
+spec: {selector: {app: redpanda}, ports: [{name: kafka, port: 9092, targetPort: 9092}]}

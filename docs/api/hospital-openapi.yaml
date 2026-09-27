@@ -1,0 +1,26 @@
+openapi: 3.0.3
+info:
+  title: EMTAF Hospital Service API
+  version: 1.5.0
+servers:
+  - url: /api/v1/hospital
+security:
+  - bearerAuth: []
+paths:
+  /me:
+    get: {summary: Current tenant membership context, responses: {'200': {description: OK}}}
+  /dashboard:
+    get: {summary: Tenant dashboard, responses: {'200': {description: OK}}}
+  /patients:
+    get: {summary: List tenant patients, responses: {'200': {description: OK}}}
+    post: {summary: Create patient, responses: {'201': {description: Created}}}
+  /appointments:
+    get: {summary: List appointments, responses: {'200': {description: OK}}}
+    post: {summary: Create appointment, responses: {'201': {description: Created}}}
+  /admissions/allocate:
+    post: {summary: Atomically admit patient and allocate bed, responses: {'201': {description: Created}, '409': {description: Bed unavailable}}}
+  /billing/{id}/payments:
+    post: {summary: Record payment, parameters: [{name: id, in: path, required: true, schema: {type: string, format: uuid}}], responses: {'201': {description: Created}}}
+components:
+  securitySchemes:
+    bearerAuth: {type: http, scheme: bearer, bearerFormat: JWT}

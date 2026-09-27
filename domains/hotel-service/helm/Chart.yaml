@@ -1,0 +1,6 @@
+apiVersion: v2
+name: emtaf-hotel-service
+description: Independently deployable EMTAF hotel domain service
+type: application
+version: 1.0.0
+appVersion: 1.0.0

@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: emtaf-domain, namespace: emtaf}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: default-deny, namespace: emtaf}
+spec: {podSelector: {}, policyTypes: [Ingress, Egress]}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: allow-domain-egress, namespace: emtaf}
+spec:
+ podSelector: {matchLabels: {app.kubernetes.io/part-of: emtaf}}
+ policyTypes: [Egress]
+ egress:
+ - to: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}}}]
+   ports: [{protocol: UDP, port: 53}, {protocol: TCP, port: 53}]
+ - to: [{podSelector: {matchLabels: {app: postgres}}}]
+   ports: [{protocol: TCP, port: 5432}]
+ - to: [{podSelector: {matchLabels: {app: redis}}}]
+   ports: [{protocol: TCP, port: 6379}]
+ - to: [{podSelector: {matchLabels: {app: redpanda}}}]
+   ports: [{protocol: TCP, port: 9092}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: allow-domain-ingress, namespace: emtaf}
+spec:
+ podSelector: {matchExpressions: [{key: app, operator: In, values: [hospital-service, school-service, college-service, hotel-service]}]}
+ policyTypes: [Ingress]
+ ingress:
+ - ports: [{protocol: TCP, port: 3000}]

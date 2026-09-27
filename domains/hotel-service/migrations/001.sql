@@ -1,0 +1,2 @@
+CREATE TABLE IF NOT EXISTS hotel_guests(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),tenant_id uuid NOT NULL REFERENCES tenants(id),guest_no text NOT NULL,first_name text NOT NULL,last_name text NOT NULL,phone text,status text NOT NULL DEFAULT 'active',created_at timestamptz NOT NULL DEFAULT now(),updated_at timestamptz NOT NULL DEFAULT now(),UNIQUE(tenant_id,guest_no));
+CREATE INDEX IF NOT EXISTS idx_hotel_guests_tenant ON hotel_guests(tenant_id);

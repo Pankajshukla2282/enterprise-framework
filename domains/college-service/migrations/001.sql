@@ -1,0 +1,2 @@
+CREATE TABLE IF NOT EXISTS college_students(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),tenant_id uuid NOT NULL REFERENCES tenants(id),enrollment_no text NOT NULL,first_name text NOT NULL,last_name text NOT NULL,phone text,email text,status text NOT NULL DEFAULT 'active',created_at timestamptz NOT NULL DEFAULT now(),updated_at timestamptz NOT NULL DEFAULT now(),UNIQUE(tenant_id,enrollment_no));
+CREATE INDEX IF NOT EXISTS idx_college_students_tenant ON college_students(tenant_id);

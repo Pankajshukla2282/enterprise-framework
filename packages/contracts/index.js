@@ -1,0 +1,1 @@
+module.exports={topics:{audit:'platform.audit.v1',notification:'platform.notification.v1',hospital:'hospital.domain.v1',school:'school.domain.v1',college:'college.domain.v1',hotel:'hotel.domain.v1'}};

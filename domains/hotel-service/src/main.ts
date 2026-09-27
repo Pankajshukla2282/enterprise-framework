@@ -1,0 +1,14 @@
+import express from 'express'; import helmet from 'helmet'; import client from 'prom-client';
+import {db,audit} from '@emtaf/core'; import {context,permission,error,json} from '@emtaf/core/dist/http';
+const app=express(); app.use(helmet()); app.use(express.json()); client.collectDefaultMetrics();
+app.get('/health/live',(_,res)=>res.json({status:'ok',service:'hotel-service'}));
+app.get('/health/ready',async(_,res)=>{try{await db.query('select 1');res.json({status:'ready'})}catch{res.status(503).json({status:'not-ready'})}});
+app.get('/metrics',async(_,res)=>{res.setHeader('Content-Type',client.register.contentType);res.end(await client.register.metrics())});
+app.use((req,res,next)=>{if(req.path.startsWith('/health')||req.path==='/metrics')return next();context(req).then(()=>next()).catch(e=>error(res,e))});
+const t=(req:any)=>req.emtaf.tenantId;
+app.get('/api/v1/hotel/guests',async(req,res)=>{try{permission('guests:read')(req);const q=await db.withTenant(t(req),c=>c.query('select * from hotel_guests where status=\'active\' order by created_at desc limit 200'));json(res,q.rows)}catch(e){error(res,e)}});
+app.post('/api/v1/hotel/guests',async(req,res)=>{try{permission('guests:write')(req);const b=req.body;const q=await db.withTenant(t(req),c=>c.query('insert into hotel_guests(tenant_id,guest_no,status) values($1,$2,$3,$4,\'active\') returning *',[t(req),b.guest_no,b.first_name,b.last_name,b.phone]));await audit('create',req.emtaf,'hotel_guests',q.rows[0].id);json(res,q.rows[0],201)}catch(e){error(res,e)}});
+app.patch('/api/v1/hotel/guests/:id',async(req,res)=>{try{permission('guests:write')(req);const b=req.body;const q=await db.withTenant(t(req),c=>c.query('update hotel_guests set first_name=coalesce($2,first_name),last_name=coalesce($3,last_name),updated_at=now() where id=$1 and status=\'active\' returning *',[req.params.id,b.first_name,b.last_name]));if(!q.rowCount)return json(res,{error:'Not found'},404);json(res,q.rows[0])}catch(e){error(res,e)}});
+app.delete('/api/v1/hotel/guests/:id',async(req,res)=>{try{permission('guests:write')(req);const q=await db.withTenant(t(req),c=>c.query('update hotel_guests set status=\'deleted\',updated_at=now() where id=$1 returning id',[req.params.id]));if(!q.rowCount)return json(res,{error:'Not found'},404);json(res,{deleted:true})}catch(e){error(res,e)}});
+app.get('/api/v1/hotel/me',async(req,res)=>json(res,{userId:req.emtaf.userId,tenantId:t(req),roles:req.emtaf.roles}));
+app.listen(Number(process.env.PORT||3000),()=>console.log('hotel-service listening'));

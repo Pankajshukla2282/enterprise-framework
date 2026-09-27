@@ -1,0 +1,6 @@
+apiVersion: v2
+name: emtaf
+description: EMTAF multi-tenant core platform and independently deployable domains
+type: application
+version: 0.9.0
+appVersion: 0.9.0

@@ -1,0 +1,107 @@
+import express from 'express';
+import helmet from 'helmet';
+import client from 'prom-client';
+import { db, events, audit } from '@emtaf/core';
+import { context, permission, error, json } from '@emtaf/core/dist/http';
+
+const app = express();
+app.use(helmet());
+app.use(express.json({limit:'1mb'}));
+client.collectDefaultMetrics();
+
+app.get('/health/live',(_,res)=>res.json({status:'ok',service:'hospital-service',version:'1.1.0'}));
+app.get('/health/ready',async(_,res)=>{try{await db.query('select 1');res.json({status:'ready'})}catch{res.status(503).json({status:'not-ready'})}});
+app.get('/metrics',async(_,res)=>{res.setHeader('Content-Type',client.register.contentType);res.end(await client.register.metrics())});
+app.use((req,res,next)=>{if(req.path.startsWith('/health')||req.path==='/metrics')return next();context(req).then(()=>next()).catch(e=>error(res,e))});
+const tid=(req:any)=>req.emtaf.tenantId;
+const run=(fn:any)=>(req:any,res:any)=>Promise.resolve().then(()=>fn(req,res)).catch(e=>error(res,e));
+const q=(req:any,sql:string,values:any[]=[])=>db.withTenant(tid(req),(c:any)=>c.query(sql,values));
+const emit=(req:any,type:string,aggregateId:string,data:any)=>events.publish('hospital.domain.v1',{type,tenantId:tid(req),aggregateId,data});
+
+app.get('/api/v1/hospital/me',(req,res)=>json(res,{userId:req.emtaf.userId,tenantId:tid(req),roles:req.emtaf.roles}));
+
+// Dashboard
+app.get('/api/v1/hospital/dashboard',run(async(req,res)=>{const [p,a,e,adm,lab,rad,inv]=await Promise.all([
+ q(req,"select count(*)::int count from hospital_patients where status='active'"),q(req,"select count(*)::int count from hospital_appointments where status='scheduled' and starts_at>=now()"),q(req,"select count(*)::int count from hospital_encounters where status='open'"),q(req,"select count(*)::int count from hospital_admissions where status='admitted'"),q(req,"select count(*)::int count from hospital_lab_orders where status in ('ordered','in_progress')"),q(req,"select count(*)::int count from hospital_radiology_orders where status in ('ordered','in_progress')"),q(req,"select coalesce(sum(amount),0)::numeric total from hospital_billing where status='unpaid'")
+]);json(res,{patients:p.rows[0].count,upcomingAppointments:a.rows[0].count,openEncounters:e.rows[0].count,activeAdmissions:adm.rows[0].count,pendingLabOrders:lab.rows[0].count,pendingRadiologyOrders:rad.rows[0].count,unpaidAmount:inv.rows[0].total})}));
+
+// Patients
+app.get('/api/v1/hospital/patients',run(async(req,res)=>{permission('patients:read')(req);const limit=Math.min(Number(req.query.limit)||50,200);const r=await q(req,"select * from hospital_patients where status='active' order by created_at desc limit $1",[limit]);json(res,r.rows)}));
+app.post('/api/v1/hospital/patients',run(async(req,res)=>{permission('patients:write')(req);const b=req.body||{};if(!b.mrn||!b.first_name||!b.last_name)return json(res,{error:'mrn, first_name and last_name are required'},400);const r=await q(req,'insert into hospital_patients(tenant_id,mrn,first_name,last_name,dob,phone,email,user_id) values($1,$2,$3,$4,$5,$6,$7,$8) returning *',[tid(req),b.mrn,b.first_name,b.last_name,b.dob||null,b.phone||null,b.email||null,b.user_id||null]);await audit('create',req.emtaf,'hospital_patient',r.rows[0].id,{mrn:r.rows[0].mrn});await emit(req,'hospital.patient.created',r.rows[0].id,r.rows[0]);json(res,r.rows[0],201)}));
+app.get('/api/v1/hospital/patients/:id',run(async(req,res)=>{permission('patients:read')(req);const r=await q(req,"select * from hospital_patients where id=$1 and status='active'",[req.params.id]);if(!r.rowCount)return json(res,{error:'Not found'},404);json(res,r.rows[0])}));
+app.patch('/api/v1/hospital/patients/:id',run(async(req,res)=>{permission('patients:write')(req);const b=req.body||{};const r=await q(req,"update hospital_patients set first_name=coalesce($2,first_name),last_name=coalesce($3,last_name),dob=coalesce($4,dob),phone=coalesce($5,phone),email=coalesce($6,email),updated_at=now() where id=$1 and status='active' returning *",[req.params.id,b.first_name,b.last_name,b.dob,b.phone,b.email]);if(!r.rowCount)return json(res,{error:'Not found'},404);await audit('update',req.emtaf,'hospital_patient',req.params.id);json(res,r.rows[0])}));
+app.delete('/api/v1/hospital/patients/:id',run(async(req,res)=>{permission('patients:write')(req);const r=await q(req,"update hospital_patients set status='deleted',updated_at=now() where id=$1 and status='active' returning id",[req.params.id]);if(!r.rowCount)return json(res,{error:'Not found'},404);await audit('delete',req.emtaf,'hospital_patient',req.params.id);json(res,{deleted:true})}));
+
+// Departments / staff
+app.get('/api/v1/hospital/departments',run(async(req,res)=>{permission('departments:read')(req);json(res,(await q(req,'select * from hospital_departments where status=\'active\' order by name')).rows)}));
+app.post('/api/v1/hospital/departments',run(async(req,res)=>{permission('departments:write')(req);const b=req.body||{};const r=await q(req,'insert into hospital_departments(tenant_id,name,code,head_user_id) values($1,$2,$3,$4) returning *',[tid(req),b.name,b.code||null,b.head_user_id||null]);json(res,r.rows[0],201)}));
+app.patch('/api/v1/hospital/departments/:id',run(async(req,res)=>{permission('departments:write')(req);const b=req.body||{};const r=await q(req,'update hospital_departments set name=coalesce($2,name),code=coalesce($3,code),head_user_id=coalesce($4,head_user_id) where id=$1 returning *',[req.params.id,b.name,b.code,b.head_user_id]);if(!r.rowCount)return json(res,{error:'Not found'},404);json(res,r.rows[0])}));
+app.get('/api/v1/hospital/staff',run(async(req,res)=>{permission('staff:read')(req);json(res,(await q(req,'select * from hospital_staff where status=\'active\' order by created_at desc')).rows)}));
+app.post('/api/v1/hospital/staff',run(async(req,res)=>{permission('staff:write')(req);const b=req.body||{};const r=await q(req,'insert into hospital_staff(tenant_id,user_id,role,department) values($1,$2,$3,$4) returning *',[tid(req),b.user_id,b.role,b.department||null]);json(res,r.rows[0],201)}));
+app.patch('/api/v1/hospital/staff/:id',run(async(req,res)=>{permission('staff:write')(req);const b=req.body||{};const r=await q(req,'update hospital_staff set role=coalesce($2,role),department=coalesce($3,department),status=coalesce($4,status) where id=$1 returning *',[req.params.id,b.role,b.department,b.status]);if(!r.rowCount)return json(res,{error:'Not found'},404);json(res,r.rows[0])}));
+
+// Appointments / encounters
+app.get('/api/v1/hospital/patient/me',run(async(req,res)=>{permission('patients:self')(req);const r=await q(req,'select * from hospital_patients where user_id=$1 and status=\'active\'',[req.emtaf.userId]);if(!r.rowCount)return json(res,{error:'Patient profile not linked'},404);json(res,r.rows[0])}));
+app.get('/api/v1/hospital/patient/me/prescriptions',run(async(req,res)=>{permission('prescriptions:self')(req);const r=await q(req,'select x.* from hospital_prescriptions x join hospital_patients p on p.id=x.patient_id where p.user_id=$1 order by x.created_at desc',[req.emtaf.userId]);json(res,r.rows)}));
+app.get('/api/v1/hospital/patient/me/lab',run(async(req,res)=>{permission('lab:self')(req);const r=await q(req,'select x.* from hospital_lab_orders x join hospital_patients p on p.id=x.patient_id where p.user_id=$1 order by x.ordered_at desc',[req.emtaf.userId]);json(res,r.rows)}));
+app.get('/api/v1/hospital/patient/me/radiology',run(async(req,res)=>{permission('radiology:self')(req);const r=await q(req,'select x.* from hospital_radiology_orders x join hospital_patients p on p.id=x.patient_id where p.user_id=$1 order by x.ordered_at desc',[req.emtaf.userId]);json(res,r.rows)}));
+app.get('/api/v1/hospital/appointments',run(async(req,res)=>{permission('appointments:manage')(req);const r=await q(req,'select a.*,p.mrn,p.first_name,p.last_name from hospital_appointments a join hospital_patients p on p.id=a.patient_id where a.starts_at>=coalesce($1::timestamptz,now()) order by a.starts_at limit 200',[req.query.from||null]);json(res,r.rows)}));
+app.post('/api/v1/hospital/appointments',run(async(req,res)=>{permission('appointments:manage')(req);const b=req.body||{};const r=await q(req,'insert into hospital_appointments(tenant_id,patient_id,provider_user_id,starts_at,ends_at,reason) values($1,$2,$3,$4,$5,$6) returning *',[tid(req),b.patient_id,b.provider_user_id||null,b.starts_at,b.ends_at,b.reason||null]);await emit(req,'hospital.appointment.created',r.rows[0].id,r.rows[0]);json(res,r.rows[0],201)}));
+app.patch('/api/v1/hospital/appointments/:id/cancel',run(async(req,res)=>{permission('appointments:manage')(req);const r=await q(req,"update hospital_appointments set status='cancelled' where id=$1 and status='scheduled' returning *",[req.params.id]);if(!r.rowCount)return json(res,{error:'Not found'},404);json(res,r.rows[0])}));
+app.post('/api/v1/hospital/encounters',run(async(req,res)=>{permission('clinical:write')(req);const b=req.body||{};const r=await q(req,'insert into hospital_encounters(tenant_id,patient_id,provider_user_id,chief_complaint,notes) values($1,$2,$3,$4,$5) returning *',[tid(req),b.patient_id,req.emtaf.userId,b.chief_complaint||null,b.notes||null]);await emit(req,'hospital.encounter.created',r.rows[0].id,r.rows[0]);json(res,r.rows[0],201)}));
+app.get('/api/v1/hospital/encounters/:id',run(async(req,res)=>{permission('clinical:read')(req);const r=await q(req,'select * from hospital_encounters where id=$1',[req.params.id]);if(!r.rowCount)return json(res,{error:'Not found'},404);json(res,r.rows[0])}));
+app.patch('/api/v1/hospital/encounters/:id/close',run(async(req,res)=>{permission('clinical:write')(req);const r=await q(req,"update hospital_encounters set status='closed',closed_at=now(),updated_at=now() where id=$1 and status='open' returning *",[req.params.id]);if(!r.rowCount)return json(res,{error:'Not found'},404);json(res,r.rows[0])}));
+
+// Wards / beds
+app.get('/api/v1/hospital/wards',run(async(req,res)=>{permission('beds:read')(req);json(res,(await q(req,'select w.*,count(b.id)::int bed_count,count(b.id) filter(where b.status=\'available\')::int available_beds from hospital_wards w left join hospital_beds b on b.ward_id=w.id group by w.id order by w.name')).rows)}));
+app.post('/api/v1/hospital/wards',run(async(req,res)=>{permission('beds:write')(req);const b=req.body||{};const r=await q(req,'insert into hospital_wards(tenant_id,department_id,name,code,capacity) values($1,$2,$3,$4,$5) returning *',[tid(req),b.department_id||null,b.name,b.code||null,Number(b.capacity)||0]);json(res,r.rows[0],201)}));
+app.post('/api/v1/hospital/beds',run(async(req,res)=>{permission('beds:write')(req);const b=req.body||{};const r=await q(req,'insert into hospital_beds(tenant_id,ward_id,bed_no) values($1,$2,$3) returning *',[tid(req),b.ward_id,b.bed_no]);json(res,r.rows[0],201)}));
+app.get('/api/v1/hospital/beds',run(async(req,res)=>{permission('beds:read')(req);json(res,(await q(req,'select b.*,w.name ward_name,p.mrn,p.first_name,p.last_name from hospital_beds b join hospital_wards w on w.id=b.ward_id left join hospital_patients p on p.id=b.patient_id order by w.name,b.bed_no')).rows)}));
+app.post('/api/v1/hospital/beds/:id/assign',run(async(req,res)=>{permission('beds:write')(req);const r=await q(req,"update hospital_beds set patient_id=$2,status='occupied' where id=$1 and status='available' returning *",[req.params.id,req.body.patient_id]);if(!r.rowCount)return json(res,{error:'Bed unavailable'},409);json(res,r.rows[0])}));
+app.post('/api/v1/hospital/beds/:id/release',run(async(req,res)=>{permission('beds:write')(req);const r=await q(req,"update hospital_beds set patient_id=null,status='available' where id=$1 returning *",[req.params.id]);if(!r.rowCount)return json(res,{error:'Not found'},404);json(res,r.rows[0])}));
+
+// Admissions / discharge
+app.get('/api/v1/hospital/admissions',run(async(req,res)=>{permission('admissions:read')(req);json(res,(await q(req,"select a.*,p.mrn,p.first_name,p.last_name from hospital_admissions a join hospital_patients p on p.id=a.patient_id where a.status='admitted' order by a.admitted_at desc")).rows)}));
+app.post('/api/v1/hospital/admissions',run(async(req,res)=>{permission('admissions:write')(req);const b=req.body||{};const r=await q(req,'insert into hospital_admissions(tenant_id,patient_id,ward,bed_no,notes) values($1,$2,$3,$4,$5) returning *',[tid(req),b.patient_id,b.ward||null,b.bed_no||null,b.notes||null]);await emit(req,'hospital.admission.created',r.rows[0].id,r.rows[0]);json(res,r.rows[0],201)}));
+app.post('/api/v1/hospital/admissions/:id/discharge',run(async(req,res)=>{permission('discharge:write')(req);const r=await q(req,"update hospital_admissions set status='discharged',discharged_at=now() where id=$1 and status='admitted' returning *",[req.params.id]);if(!r.rowCount)return json(res,{error:'Not found'},404);json(res,r.rows[0])}));
+app.post('/api/v1/hospital/admissions/:id/discharge-summary',run(async(req,res)=>{permission('discharge:write')(req);const b=req.body||{};const a=await q(req,'select patient_id from hospital_admissions where id=$1',[req.params.id]);if(!a.rowCount)return json(res,{error:'Admission not found'},404);const r=await q(req,'insert into hospital_discharge_summaries(tenant_id,admission_id,patient_id,prepared_by,diagnosis,procedures,medications,follow_up,summary) values($1,$2,$3,$4,$5,$6,$7,$8,$9) on conflict(tenant_id,admission_id) do update set diagnosis=excluded.diagnosis,procedures=excluded.procedures,medications=excluded.medications,follow_up=excluded.follow_up,summary=excluded.summary returning *',[tid(req),req.params.id,a.rows[0].patient_id,req.emtaf.userId,b.diagnosis||null,b.procedures||null,b.medications||null,b.follow_up||null,b.summary||null]);json(res,r.rows[0],201)}));
+
+// Prescriptions
+app.get('/api/v1/hospital/prescriptions',run(async(req,res)=>{permission('prescriptions:read')(req);const r=await q(req,'select * from hospital_prescriptions where patient_id=coalesce($1::uuid,patient_id) order by created_at desc limit 200',[req.query.patient_id||null]);json(res,r.rows)}));
+app.post('/api/v1/hospital/prescriptions',run(async(req,res)=>{permission('prescriptions:write')(req);const b=req.body||{};const r=await q(req,'insert into hospital_prescriptions(tenant_id,patient_id,encounter_id,prescribed_by,medicine,dosage,duration,quantity,instructions) values($1,$2,$3,$4,$5,$6,$7,$8,$9) returning *',[tid(req),b.patient_id,b.encounter_id||null,req.emtaf.userId,b.medicine,b.dosage||null,b.duration||null,b.quantity||null,b.instructions||null]);await emit(req,'hospital.prescription.created',r.rows[0].id,r.rows[0]);json(res,r.rows[0],201)}));
+app.patch('/api/v1/hospital/prescriptions/:id/stop',run(async(req,res)=>{permission('prescriptions:write')(req);const r=await q(req,"update hospital_prescriptions set status='stopped' where id=$1 and status='active' returning *",[req.params.id]);if(!r.rowCount)return json(res,{error:'Not found'},404);json(res,r.rows[0])}));
+
+// Laboratory / radiology
+app.get('/api/v1/hospital/lab/orders',run(async(req,res)=>{permission('lab:read')(req);json(res,(await q(req,'select * from hospital_lab_orders where patient_id=coalesce($1::uuid,patient_id) order by ordered_at desc limit 200',[req.query.patient_id||null])).rows)}));
+app.post('/api/v1/hospital/lab/orders',run(async(req,res)=>{permission('lab:write')(req);const b=req.body||{};const r=await q(req,'insert into hospital_lab_orders(tenant_id,patient_id,encounter_id,ordered_by,test_name,priority) values($1,$2,$3,$4,$5,$6) returning *',[tid(req),b.patient_id,b.encounter_id||null,req.emtaf.userId,b.test_name,b.priority||'routine']);await emit(req,'hospital.lab.ordered',r.rows[0].id,r.rows[0]);json(res,r.rows[0],201)}));
+app.patch('/api/v1/hospital/lab/orders/:id/result',run(async(req,res)=>{permission('lab:write')(req);const r=await q(req,"update hospital_lab_orders set status='completed',result=$2,completed_at=now() where id=$1 returning *",[req.params.id,req.body.result||null]);if(!r.rowCount)return json(res,{error:'Not found'},404);json(res,r.rows[0])}));
+app.get('/api/v1/hospital/radiology/orders',run(async(req,res)=>{permission('radiology:read')(req);json(res,(await q(req,'select * from hospital_radiology_orders where patient_id=coalesce($1::uuid,patient_id) order by ordered_at desc limit 200',[req.query.patient_id||null])).rows)}));
+app.post('/api/v1/hospital/radiology/orders',run(async(req,res)=>{permission('radiology:write')(req);const b=req.body||{};const r=await q(req,'insert into hospital_radiology_orders(tenant_id,patient_id,encounter_id,ordered_by,study,priority) values($1,$2,$3,$4,$5,$6) returning *',[tid(req),b.patient_id,b.encounter_id||null,req.emtaf.userId,b.study,b.priority||'routine']);await emit(req,'hospital.radiology.ordered',r.rows[0].id,r.rows[0]);json(res,r.rows[0],201)}));
+app.patch('/api/v1/hospital/radiology/orders/:id/report',run(async(req,res)=>{permission('radiology:write')(req);const r=await q(req,"update hospital_radiology_orders set status='completed',report=$2,completed_at=now() where id=$1 returning *",[req.params.id,req.body.report||null]);if(!r.rowCount)return json(res,{error:'Not found'},404);json(res,r.rows[0])}));
+
+// Insurance
+app.get('/api/v1/hospital/insurance',run(async(req,res)=>{permission('insurance:read')(req);json(res,(await q(req,'select * from hospital_insurance_policies where patient_id=coalesce($1::uuid,patient_id) order by valid_to desc',[req.query.patient_id||null])).rows)}));
+app.post('/api/v1/hospital/insurance',run(async(req,res)=>{permission('insurance:write')(req);const b=req.body||{};const r=await q(req,'insert into hospital_insurance_policies(tenant_id,patient_id,provider,policy_no,member_no,valid_from,valid_to) values($1,$2,$3,$4,$5,$6,$7) returning *',[tid(req),b.patient_id,b.provider,b.policy_no,b.member_no||null,b.valid_from||null,b.valid_to||null]);json(res,r.rows[0],201)}));
+
+// Billing / items / payments
+app.get('/api/v1/hospital/billing',run(async(req,res)=>{permission('billing:read')(req);json(res,(await q(req,'select b.*,p.mrn,p.first_name,p.last_name,coalesce(sum(i.amount),0)::numeric item_total,coalesce(sum(pm.amount),0)::numeric paid_total from hospital_billing b join hospital_patients p on p.id=b.patient_id left join hospital_invoice_items i on i.invoice_id=b.id left join hospital_payments pm on pm.invoice_id=b.id group by b.id,p.mrn,p.first_name,p.last_name order by b.issued_at desc limit 200')).rows)}));
+app.post('/api/v1/hospital/billing',run(async(req,res)=>{permission('billing:write')(req);const b=req.body||{};const r=await q(req,'insert into hospital_billing(tenant_id,patient_id,invoice_no,amount) values($1,$2,$3,$4) returning *',[tid(req),b.patient_id,b.invoice_no,b.amount]);await audit('create',req.emtaf,'hospital_billing',r.rows[0].id);json(res,r.rows[0],201)}));
+app.post('/api/v1/hospital/billing/:id/items',run(async(req,res)=>{permission('billing:write')(req);const b=req.body||{};const r=await q(req,'insert into hospital_invoice_items(tenant_id,invoice_id,description,quantity,unit_price) values($1,$2,$3,$4,$5) returning *',[tid(req),req.params.id,b.description,b.quantity||1,b.unit_price]);await q(req,'update hospital_billing set amount=(select coalesce(sum(amount),0) from hospital_invoice_items where invoice_id=$1) where id=$1',[req.params.id]);json(res,r.rows[0],201)}));
+app.post('/api/v1/hospital/billing/:id/payments',run(async(req,res)=>{permission('billing:write')(req);const b=req.body||{};const r=await q(req,'insert into hospital_payments(tenant_id,invoice_id,amount,method,reference) values($1,$2,$3,$4,$5) returning *',[tid(req),req.params.id,b.amount,b.method,b.reference||null]);await q(req,"update hospital_billing set status=case when (select coalesce(sum(amount),0) from hospital_payments where invoice_id=$1)>=(select amount from hospital_billing where id=$1) then 'paid' else 'partial' end,paid_at=case when (select coalesce(sum(amount),0) from hospital_payments where invoice_id=$1)>=(select amount from hospital_billing where id=$1) then now() else paid_at end where id=$1",[req.params.id]);json(res,r.rows[0],201)}));
+
+
+// Atomic admission + bed allocation workflow (v1.2)
+app.post('/api/v1/hospital/admissions/allocate',run(async(req,res)=>{
+  permission('admissions:write')(req); permission('beds:write')(req);
+  const b=req.body||{};
+  const result=await db.withTenant(tid(req),async(c:any)=>{
+    await c.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[`${tid(req)}:${b.bed_id||''}`]);
+    const bed=await c.query("select * from hospital_beds where id=$1 for update",[b.bed_id]);
+    if(!bed.rowCount || bed.rows[0].status!=='available') throw Object.assign(new Error('Bed unavailable'),{statusCode:409});
+    const admission=await c.query('insert into hospital_admissions(tenant_id,patient_id,ward_id,bed_id,ward,bed_no,notes) values($1,$2,$3,$4,$5,$6,$7) returning *',[tid(req),b.patient_id,bed.rows[0].ward_id,bed.rows[0].id,b.ward||null,bed.rows[0].bed_no,b.notes||null]);
+    await c.query("update hospital_beds set status='occupied',patient_id=$2 where id=$1",[b.bed_id,b.patient_id]);
+    return admission.rows[0];
+  });
+  await emit(req,'hospital.admission.allocated',result.id,result); json(res,result,201);
+}));
+const port=Number(process.env.PORT||3000);app.listen(port,()=>console.log(`hospital-service listening on ${port}`));
