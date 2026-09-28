@@ -40,3 +40,23 @@ kubectl apply -k infra/kubernetes/overlays/prod
 Production should use managed PostgreSQL/Redis/Kafka where appropriate and External Secrets for credentials.
 
 See `DEPLOYMENT.md` for image builds and Helm deployment.
+
+## EMTAF v1.6 domain portfolio
+
+The platform now includes five independently deployable domain services:
+
+- hospital-service — hospital operations and clinical workflows
+- school-service — students, teachers, classes, enrollments and attendance
+- college-service — students, faculty, departments, courses, enrollments, attendance, fees and exams
+- hotel-service — guests, room inventory, bookings, check-in/out, payments and housekeeping
+- realestate-service — properties, units, listings, leads, viewings, offers, leases and payments
+
+All domain services consume the shared core framework and use tenant-scoped authentication, RBAC, PostgreSQL RLS, audit and domain events. Kubernetes and Helm artifacts are included for each service; there is no Docker Compose.
+
+## Image repository strategy
+
+EMTAF supports registry-free local Kubernetes development and configurable cloud OCI registries. See `docs/IMAGE-REPOSITORY-v1.8.md`. Local mode builds `emtaf-*:<tag>` images directly into the Docker engine and uses `IfNotPresent`; cloud mode uses `-Registry` and an explicit push/login step. No registry login is required for local development.
+
+## Image repository update
+
+v1.8.1 adds registry-free local image operation plus configurable cloud OCI registry support. See `docs/IMAGE-REPOSITORY-v1.8.md` and `RELEASE_NOTES_v1.8.1_IMAGE_REPOSITORY.md`.

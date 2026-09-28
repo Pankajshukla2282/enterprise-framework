@@ -10,7 +10,8 @@ spec:
   spec:
    containers:
    - name: {{ $domain }}-service
-     image: {{ $.Values.imageRegistry }}/emtaf-{{ $domain }}-service:{{ $.Values.imageTag }}
+     image: {{ if $.Values.imageRegistry }}{{ $.Values.imageRegistry }}/{{ end }}emtaf-{{ $domain }}-service:{{ $.Values.imageTag }}
+     imagePullPolicy: {{ $.Values.imagePullPolicy }}
      env:
      - {name: DATABASE_URL, valueFrom: {secretKeyRef: {name: emtaf-platform-secrets, key: DATABASE_URL}}}
      - {name: JWT_SECRET, valueFrom: {secretKeyRef: {name: emtaf-platform-secrets, key: JWT_SECRET}}}

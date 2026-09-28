@@ -11,6 +11,7 @@ spec:
       containers:
       - name: app
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.imagePullPolicy }}
         ports: [{containerPort: 3000}]
         envFrom: [{configMapRef: {name: {{ .Values.envFromConfig }}}}, {secretRef: {name: {{ .Values.envFromSecret }}}}]
         resources: {{- toYaml .Values.resources | nindent 10 }}

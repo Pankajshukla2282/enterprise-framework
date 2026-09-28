@@ -1,0 +1,41 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: emtaf
+resources:
+- ../../base
+images:
+- name: postgres:16-alpine
+  newName: __EMTAF_REGISTRY__/emtaf-postgres
+  newTag: 16-alpine
+- name: redis:7-alpine
+  newName: __EMTAF_REGISTRY__/emtaf-redis
+  newTag: 7-alpine
+- name: docker.redpanda.com/redpandadata/redpanda
+  newName: __EMTAF_REGISTRY__/emtaf-redpanda
+  newTag: v24.3.5
+- name: emtaf-tenant-service
+  newName: __EMTAF_REGISTRY__/emtaf-tenant-service
+  newTag: __EMTAF_TAG__
+- name: emtaf-hospital-service
+  newName: __EMTAF_REGISTRY__/emtaf-hospital-service
+  newTag: __EMTAF_TAG__
+- name: emtaf-school-service
+  newName: __EMTAF_REGISTRY__/emtaf-school-service
+  newTag: __EMTAF_TAG__
+- name: emtaf-college-service
+  newName: __EMTAF_REGISTRY__/emtaf-college-service
+  newTag: __EMTAF_TAG__
+- name: emtaf-hotel-service
+  newName: __EMTAF_REGISTRY__/emtaf-hotel-service
+  newTag: __EMTAF_TAG__
+- name: emtaf-realestate-service
+  newName: __EMTAF_REGISTRY__/emtaf-realestate-service
+  newTag: __EMTAF_TAG__
+- name: emtaf-demo-wireframe
+  newName: __EMTAF_REGISTRY__/emtaf-demo-wireframe
+  newTag: __EMTAF_TAG__
+- name: emtaf-migrations
+  newName: __EMTAF_REGISTRY__/emtaf-migrations
+  newTag: __EMTAF_TAG__
+patchesStrategicMerge:
+- ../../dev/secret-patch.yaml

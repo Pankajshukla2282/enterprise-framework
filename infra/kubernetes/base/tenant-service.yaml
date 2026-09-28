@@ -14,7 +14,8 @@ spec:
       serviceAccountName: emtaf-tenant-service
       containers:
       - name: tenant-service
-        image: ghcr.io/your-org/emtaf-tenant-service:1.0.0
+        image: emtaf-tenant-service:dev
+        imagePullPolicy: IfNotPresent
         ports: [{containerPort: 3000}]
         envFrom: [{configMapRef: {name: emtaf-platform-config}}, {secretRef: {name: emtaf-secrets}}]
         resources: {requests: {cpu: 100m, memory: 128Mi}, limits: {cpu: 500m, memory: 512Mi}}

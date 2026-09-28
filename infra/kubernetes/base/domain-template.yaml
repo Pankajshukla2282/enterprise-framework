@@ -1,5 +1,0 @@
-# Copy/parameterize per domain in the overlay; each domain is an independent Deployment/Service.
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata: {name: DOMAIN-pdb, namespace: emtaf}
-spec: {minAvailable: 1, selector: {matchLabels: {app: DOMAIN-service}}}

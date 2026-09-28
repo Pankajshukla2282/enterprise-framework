@@ -46,3 +46,7 @@ helm upgrade --install emtaf-hospital domains/hospital-service/helm -n emtaf --c
 ## 4. Tenant/RBAC
 
 `tenant-service` manages tenants and tenant memberships. Domain services derive effective roles from `tenant_memberships`. Never trust roles supplied by a browser/client. Every domain row has `tenant_id`, application queries execute inside `Database.withTenant()`, and PostgreSQL RLS provides a second boundary.
+
+## Image repository strategy
+
+EMTAF supports registry-free local Kubernetes development and configurable cloud OCI registries. See `docs/IMAGE-REPOSITORY-v1.8.md`. Local mode builds `emtaf-*:<tag>` images directly into the Docker engine and uses `IfNotPresent`; cloud mode uses `-Registry` and an explicit push/login step. No registry login is required for local development.

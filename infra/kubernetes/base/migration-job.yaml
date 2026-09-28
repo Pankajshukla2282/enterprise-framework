@@ -10,7 +10,8 @@ spec:
       restartPolicy: OnFailure
       containers:
       - name: migrate
-        image: ghcr.io/YOUR_ORG/emtaf-migrations:1.0.0
+        image: emtaf-migrations:dev
+        imagePullPolicy: IfNotPresent
         env:
         - name: DATABASE_URL
           valueFrom:

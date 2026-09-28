@@ -10,7 +10,8 @@ spec:
    serviceAccountName: emtaf-domain
    containers:
    - name: college-service
-     image: ghcr.io/YOUR_ORG/emtaf-college-service:0.9.0
+     image: emtaf-college-service:dev
+     imagePullPolicy: IfNotPresent
      envFrom: [{configMapRef: {name: emtaf-platform-config}}, {secretRef: {name: emtaf-platform-secrets}}]
      ports: [{containerPort: 3000}]
      resources: {requests: {cpu: 100m, memory: 128Mi}, limits: {cpu: 500m, memory: 512Mi}}

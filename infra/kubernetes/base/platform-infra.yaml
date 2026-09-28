@@ -10,6 +10,7 @@ spec:
    containers:
    - name: postgres
      image: postgres:16-alpine
+     imagePullPolicy: IfNotPresent
      env:
      - {name: POSTGRES_DB, value: emtaf}
      - {name: POSTGRES_USER, value: emtaf}
@@ -58,6 +59,7 @@ spec:
    containers:
    - name: redpanda
      image: docker.redpanda.com/redpandadata/redpanda:v24.3.5
+     imagePullPolicy: IfNotPresent
      command: ["rpk","redpanda","start","--overprovisioned","--smp","1","--memory","512M","--reserve-memory","0M","--node-id","0","--check=false"]
      ports: [{containerPort: 9092}]
      resources: {requests: {cpu: 250m, memory: 512Mi}, limits: {cpu: 1000m, memory: 1Gi}}

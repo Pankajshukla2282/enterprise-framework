@@ -2,5 +2,5 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata: {name: emtaf-domains, namespace: emtaf}
 spec:
- selector: {matchExpressions: [{key: app, operator: In, values: [hospital-service, school-service, college-service, hotel-service]}]}
+ selector: {matchExpressions: [{key: app, operator: In, values: [hospital-service, school-service, college-service, hotel-service, realestate-service]}]}
  endpoints: [{port: http, path: /metrics, interval: 15s}]

@@ -15,3 +15,7 @@ Kubernetes is the only orchestration target in this implementation. There is int
 Every business table has `tenant_id`. Every authenticated request resolves `{userId, tenantId, roles}` from the JWT. Queries must always include tenant_id. The domain APIs reject unauthenticated requests and enforce role sets per command.
 
 For production, replace the sample JWT validation with the platform Identity service/JWKS and make tenant membership an authorization lookup or signed entitlement.
+
+## Image repository strategy
+
+EMTAF supports registry-free local Kubernetes development and configurable cloud OCI registries. See `docs/IMAGE-REPOSITORY-v1.8.md`. Local mode builds `emtaf-*:<tag>` images directly into the Docker engine and uses `IfNotPresent`; cloud mode uses `-Registry` and an explicit push/login step. No registry login is required for local development.

@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: emtaf-demo-wireframe
+  namespace: emtaf
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: emtaf-demo-wireframe}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/part-of: emtaf, app: emtaf-demo-wireframe}
+    spec:
+      containers:
+      - name: wireframe
+        image: emtaf-demo-wireframe:dev
+        imagePullPolicy: IfNotPresent
+        ports: [{containerPort: 80}]
+        resources:
+          requests: {cpu: 25m, memory: 32Mi}
+          limits: {cpu: 100m, memory: 128Mi}
+        readinessProbe: {httpGet: {path: /, port: 80}, initialDelaySeconds: 3, periodSeconds: 10}
+        livenessProbe: {httpGet: {path: /, port: 80}, initialDelaySeconds: 10, periodSeconds: 20}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: emtaf-demo-wireframe
+  namespace: emtaf
+spec:
+  selector: {app: emtaf-demo-wireframe}
+  ports: [{port: 80, targetPort: 80}]

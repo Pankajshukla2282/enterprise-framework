@@ -11,5 +11,7 @@ resources:
 - school-service.yaml
 - college-service.yaml
 - hotel-service.yaml
+- realestate-service.yaml
+- demo-wireframe.yaml
 - resource-limits.yaml
 - migration-job.yaml

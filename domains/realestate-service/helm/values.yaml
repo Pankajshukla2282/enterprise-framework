@@ -1,0 +1,8 @@
+imagePullPolicy: IfNotPresent
+replicaCount: 2
+image: emtaf-realestate-service:dev
+namespace: emtaf
+resources:
+  requests: {cpu: 100m, memory: 128Mi}
+  limits: {cpu: 500m, memory: 512Mi}
+hpa: {minReplicas: 2, maxReplicas: 10, cpu: 70, memory: 75}

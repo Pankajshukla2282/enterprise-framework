@@ -1,8 +1,9 @@
 namespace: emtaf
-imageRegistry: ghcr.io/YOUR_ORG
-imageTag: "0.9.0"
+imageRegistry: ""
+imageTag: "dev"
 replicaCount: 2
 resources: {requests: {cpu: 100m, memory: 128Mi}, limits: {cpu: 500m, memory: 512Mi}}
 hpa: {minReplicas: 2, maxReplicas: 10, cpu: 70, memory: 75}
-domains: {hospital: true, school: true, college: true, hotel: true}
+domains: {hospital: true, school: true, college: true, hotel: true, realestate: true}
 secrets: {databaseUrl: "", jwtSecret: ""}
+imagePullPolicy: IfNotPresent

@@ -4,13 +4,29 @@ namespace: emtaf
 resources:
 - ../../base
 images:
-- name: ghcr.io/YOUR_ORG/emtaf-tenant-service
-  newTag: prod
-- name: ghcr.io/YOUR_ORG/emtaf-hospital-service
-  newTag: prod
-- name: ghcr.io/YOUR_ORG/emtaf-school-service
-  newTag: prod
-- name: ghcr.io/YOUR_ORG/emtaf-college-service
-  newTag: prod
-- name: ghcr.io/YOUR_ORG/emtaf-hotel-service
-  newTag: prod
+- name: emtaf-tenant
+  newName: emtaf-tenant
+  newTag: dev
+- name: emtaf-hospital
+  newName: emtaf-hospital
+  newTag: dev
+- name: emtaf-school
+  newName: emtaf-school
+  newTag: dev
+- name: emtaf-college
+  newName: emtaf-college
+  newTag: dev
+- name: emtaf-hotel
+  newName: emtaf-hotel
+  newTag: dev
+- name: emtaf-realestate
+  newName: emtaf-realestate
+  newTag: dev
+- name: emtaf-demo-wireframe
+  newName: emtaf-demo-wireframe
+  newTag: dev
+- name: emtaf-migrations
+  newName: emtaf-migrations
+  newTag: dev
+patchesStrategicMerge:
+- ../dev/secret-patch.yaml

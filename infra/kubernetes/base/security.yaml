@@ -27,7 +27,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata: {name: allow-domain-ingress, namespace: emtaf}
 spec:
- podSelector: {matchExpressions: [{key: app, operator: In, values: [hospital-service, school-service, college-service, hotel-service]}]}
+ podSelector: {matchExpressions: [{key: app, operator: In, values: [hospital-service, school-service, college-service, hotel-service, realestate-service]}]}
  policyTypes: [Ingress]
  ingress:
  - ports: [{protocol: TCP, port: 3000}]

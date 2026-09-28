@@ -1,7 +1,7 @@
 {
   "name": "emtaf-saas",
   "private": true,
-  "version": "1.5.0",
+  "version": "1.8.0",
   "workspaces": [
     "core",
     "domains/*",
@@ -16,10 +16,17 @@
     "build:school": "npm run build --workspace=@emtaf/school-service",
     "build:college": "npm run build --workspace=@emtaf/college-service",
     "build:hotel": "npm run build --workspace=@emtaf/hotel-service",
+    "build:realestate": "npm run build --workspace=@emtaf/realestate-service",
     "build:tenant": "npm run build --workspace=@emtaf/tenant-service",
-    "test:smoke": "node --test tests/release-smoke.test.js"
+    "test:smoke": "node --test tests/release-smoke.test.js",
+    "ops:build": "npm run build",
+    "ops:test": "npm run test:smoke",
+    "images:build": "powershell -ExecutionPolicy Bypass -File ./scripts/build.ps1 -Target all -Mode local"
   },
   "engines": {
     "node": ">=22"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
   }
 }
