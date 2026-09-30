@@ -1,62 +1,71 @@
-# EMTAF SaaS v1.0 — Kubernetes-first multi-tenant core + independently deployable domains
+# EMTAF SaaS Platform
 
-This release removes Docker Compose entirely. Kubernetes/Kustomize/Helm are the deployment model.
+EMTAF is a Kubernetes-first, multi-tenant SaaS platform with a shared core and independently deployable domain services. Docker Compose is not used.
 
-## Architecture
-- Shared `@emtaf/core`: JWT parsing, tenant membership authorization, RBAC/permissions, PostgreSQL transaction tenant context, Redis, Kafka-compatible event bus, audit logging.
-- `tenant-service`: tenant and tenant-membership administration.
-- Independent domain services: hospital, school, college, hotel.
-- PostgreSQL tenant_id + RLS defense-in-depth.
-- Redis for platform cache/session primitives.
-- Redpanda/Kafka-compatible event bus for domain events.
-- External Secrets/AWS Secrets Manager integration for production secrets.
-- Health probes, HPA, resources, NetworkPolicies, Prometheus metrics and OpenTelemetry/ServiceMonitor manifests.
+## Domain portfolio
 
-## Multi-tenant RBAC
-A JWT identifies the user and requested tenant. Effective roles are resolved from `tenant_memberships` for that tenant. Client-supplied role claims are not trusted for authorization.
+- Hospital — clinical and hospital operations
+- School — students, teachers, classes, enrollments and attendance
+- College — students, faculty, departments, courses, enrollments, attendance, fees and exams
+- Hotel — guests, rooms, bookings, check-in/out, payments and housekeeping
+- Real Estate — properties, units, listings, leads, viewings, offers, leases and payments
 
-Hospital roles: `superadmin`, `admin`, `doctor`, `nurse`, `accountant`, `receptionist`, `patient`.
+## Shared core
 
-The same user can belong to multiple tenants with different roles.
+The core provides authentication context, tenant membership, tenant-scoped RBAC, PostgreSQL tenant context/RLS, Redis primitives, event-bus integration, audit foundations and operational contracts. The tenant service provides tenant and membership administration.
 
-## Independent builds
-```bash
-npm run build:tenant
-npm run build:hospital
-npm run build:school
-npm run build:college
-npm run build:hotel
+## Deployment model
+
+Kubernetes is the runtime. Kustomize provides `dev`, `staging`, and `prod` overlays; each domain also has an independent Helm chart. Local development can use locally built images without a registry login. Cloud/private OCI registries are supported explicitly.
+
+## Platform operations
+
+Use the root scripts for full-platform operations:
+
+### Windows
+```powershell
+.\scripts\install-windows.ps1
+.\scripts\build.ps1 -Mode local -Target all
+.\scripts\start.ps1 -Environment dev -ImageMode local
+.\scripts\seed.ps1 -Environment dev
+.\scripts\status.ps1
+.\scripts\stop.ps1 -Environment dev
 ```
 
-Each service has its own Dockerfile and Helm chart. No Compose files are included.
-
-## Kubernetes
+### Linux/macOS
 ```bash
-kubectl apply -k infra/kubernetes/overlays/dev
-kubectl apply -k infra/kubernetes/overlays/staging
-kubectl apply -k infra/kubernetes/overlays/prod
+./scripts/build.sh --mode local --target all
+./scripts/start.sh dev
+./scripts/seed.sh dev
+./scripts/status.sh
+./scripts/stop.sh dev
 ```
 
-Production should use managed PostgreSQL/Redis/Kafka where appropriate and External Secrets for credentials.
+For an individual service, use that service's own `README.md`, `DEPLOYMENT.md`, `RUNBOOK.md`, and `scripts/` directory.
 
-See `DEPLOYMENT.md` for image builds and Helm deployment.
+## Documentation layout
 
-## EMTAF v1.6 domain portfolio
+```text
+README.md                         # platform overview
+CHANGELOG.md                      # consolidated release history
+core/README.md                    # core framework
+core/DEPLOYMENT.md                # core deployment
+core/RUNBOOK.md                   # core operations
+core/scripts/                      # core-local operations
+services/tenant-service/           # tenant platform service
+domains/<service>/README.md       # domain overview
+domains/<service>/DEPLOYMENT.md   # domain deployment
+domains/<service>/RUNBOOK.md      # domain operations
+domains/<service>/scripts/        # domain operations
+docs/                             # cross-cutting architecture/API/security docs
+demo-wireframe/README.md          # demo UI
+```
 
-The platform now includes five independently deployable domain services:
+Historical root README and release-note files have been consolidated into this README and `CHANGELOG.md` to keep the repository uncluttered.
 
-- hospital-service — hospital operations and clinical workflows
-- school-service — students, teachers, classes, enrollments and attendance
-- college-service — students, faculty, departments, courses, enrollments, attendance, fees and exams
-- hotel-service — guests, room inventory, bookings, check-in/out, payments and housekeeping
-- realestate-service — properties, units, listings, leads, viewings, offers, leases and payments
+## Production hardening v1.9.1
 
-All domain services consume the shared core framework and use tenant-scoped authentication, RBAC, PostgreSQL RLS, audit and domain events. Kubernetes and Helm artifacts are included for each service; there is no Docker Compose.
+See `docs/PRODUCTION-HARDENING-v1.9.1.md`. Critical Hospital writes now support transactional idempotency and outbox events; tenant tables use FORCE RLS; OpenTelemetry tracing, CI security gates, backup/restore verification and an isolated training sandbox are included.
 
-## Image repository strategy
-
-EMTAF supports registry-free local Kubernetes development and configurable cloud OCI registries. See `docs/IMAGE-REPOSITORY-v1.8.md`. Local mode builds `emtaf-*:<tag>` images directly into the Docker engine and uses `IfNotPresent`; cloud mode uses `-Registry` and an explicit push/login step. No registry login is required for local development.
-
-## Image repository update
-
-v1.8.1 adds registry-free local image operation plus configurable cloud OCI registry support. See `docs/IMAGE-REPOSITORY-v1.8.md` and `RELEASE_NOTES_v1.8.1_IMAGE_REPOSITORY.md`.
+## v1.10 production hardening
+See `docs/PRODUCTION-READY-v1.10.md` for the controlled-production acceptance gate. Production/staging use external managed PostgreSQL/Redis/Event Bus and external secrets; local/dev/sandbox can continue to use the in-cluster platform infrastructure.

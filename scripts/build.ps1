@@ -5,7 +5,8 @@ param(
   [string]$Registry='',
   [string]$Tag='dev',
   [switch]$Push,
-  [switch]$Load
+  [switch]$Load,
+  [switch]$Provenance
 )
 $ErrorActionPreference='Stop'
 $Root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
@@ -17,7 +18,7 @@ foreach($name in $targets){
   $repo = "emtaf-$name"
   $image = if($Mode -eq 'cloud') { if([string]::IsNullOrWhiteSpace($Registry)){throw 'Registry is required in cloud mode. Use -Registry ghcr.io/your-org (or your ECR/ACR/GAR repository).'} else { "$Registry/$repo`:$Tag" } } else { "$repo`:$Tag" }
   Write-Host "[EMTAF] Building $image"
-  docker build -f $map[$name] -t $image .
+  docker build --provenance=$($Provenance.ToString().ToLower()) --sbom=$($Provenance.ToString().ToLower()) -f $map[$name] -t $image .
   if($Load -and $Mode -eq 'local') {
     if(Get-Command kind -ErrorAction SilentlyContinue){ docker image inspect $image | Out-Null; kind load docker-image $image }
     elseif(Get-Command minikube -ErrorAction SilentlyContinue){ minikube image load $image }

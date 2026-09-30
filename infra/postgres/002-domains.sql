@@ -1,5 +1,4 @@
-\ir ../../domains/hospital-service/migrations/001.sql
-\ir ../../domains/school-service/migrations/001.sql
-\ir ../../domains/college-service/migrations/001.sql
-\ir ../../domains/hotel-service/migrations/001.sql
-\ir ../../domains/realestate-service/migrations/001.sql
+-- Domain migration dispatcher.
+-- Domain schemas are applied by infra/migrations/migrate.sh and CI in lexical order
+-- from domains/*/migrations/*.sql. This file intentionally contains no \\ir statements
+-- so a migration cannot be executed twice by accident.

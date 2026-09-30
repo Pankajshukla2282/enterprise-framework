@@ -3,7 +3,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 NAMESPACE="${NAMESPACE:-emtaf}"
 OVERLAY="${1:-dev}"
-case "$OVERLAY" in dev|staging|prod) ;; *) echo "Usage: $0 [dev|staging|prod]" >&2; exit 2;; esac
+case "$OVERLAY" in sandbox) NAMESPACE=emtaf-training ;; dev|staging|prod) ;;  *) echo "Usage: $0 [dev|staging|prod]" >&2; exit 2;; esac
 command -v kubectl >/dev/null || { echo "kubectl is required" >&2; exit 1; }
 POD="$(kubectl -n "$NAMESPACE" get pods -l app=postgres -o jsonpath='{.items[0].metadata.name}')"
 [[ -n "$POD" ]] || { echo "PostgreSQL pod not found in namespace $NAMESPACE" >&2; exit 1; }

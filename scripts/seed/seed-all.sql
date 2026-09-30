@@ -71,6 +71,7 @@ ON CONFLICT(tenant_id,user_id) DO UPDATE SET roles=EXCLUDED.roles,status='active
 
 -- ---------------------------------------------------------------------------
 -- Hospital
+SELECT set_config('app.tenant_id',(SELECT id::text FROM tenants WHERE code='demo-hospital'),true);
 -- ---------------------------------------------------------------------------
 WITH t AS (SELECT id FROM tenants WHERE code='demo-hospital'),
 admin AS (SELECT id FROM users WHERE email='hospital.admin@demo.local'),
@@ -127,6 +128,7 @@ ON CONFLICT(tenant_id,invoice_no) DO UPDATE SET amount=EXCLUDED.amount,status='u
 
 -- ---------------------------------------------------------------------------
 -- School
+SELECT set_config('app.tenant_id',(SELECT id::text FROM tenants WHERE code='demo-school'),true);
 -- ---------------------------------------------------------------------------
 WITH t AS (SELECT id FROM tenants WHERE code='demo-school'), u AS (SELECT id FROM users WHERE email='school.teacher@demo.local')
 INSERT INTO school_teachers(tenant_id,user_id,employee_no,name)
@@ -154,6 +156,7 @@ ON CONFLICT(tenant_id,student_id,attendance_date) DO UPDATE SET status=EXCLUDED.
 
 -- ---------------------------------------------------------------------------
 -- College
+SELECT set_config('app.tenant_id',(SELECT id::text FROM tenants WHERE code='demo-college'),true);
 -- ---------------------------------------------------------------------------
 WITH t AS (SELECT id FROM tenants WHERE code='demo-college')
 INSERT INTO college_departments(tenant_id,name,code)
@@ -178,6 +181,7 @@ SELECT t.id,s.id,c.id,'2026-FALL' FROM t,s,c ON CONFLICT(tenant_id,student_id,co
 
 -- ---------------------------------------------------------------------------
 -- Hotel
+SELECT set_config('app.tenant_id',(SELECT id::text FROM tenants WHERE code='demo-hotel'),true);
 -- ---------------------------------------------------------------------------
 WITH t AS (SELECT id FROM tenants WHERE code='demo-hotel')
 INSERT INTO hotel_room_types(tenant_id,name,capacity,base_rate)
@@ -201,6 +205,7 @@ ON CONFLICT(tenant_id,booking_no) DO UPDATE SET room_id=EXCLUDED.room_id,status=
 
 -- ---------------------------------------------------------------------------
 -- Real Estate
+SELECT set_config('app.tenant_id',(SELECT id::text FROM tenants WHERE code='demo-realestate'),true);
 -- ---------------------------------------------------------------------------
 WITH t AS (SELECT id FROM tenants WHERE code='demo-realestate'), u AS (SELECT id FROM users WHERE email='realestate.agent@demo.local')
 INSERT INTO realestate_properties(tenant_id,property_code,name,property_type,address_line1,city,state,country,postal_code,owner_user_id)

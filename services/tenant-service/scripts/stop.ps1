@@ -1,0 +1,1 @@
+[CmdletBinding()] param([string]$Namespace='emtaf',[switch]$PurgeData); if($PurgeData){kubectl -n $Namespace delete deployment emtaf-tenant-service --ignore-not-found}else{kubectl -n $Namespace scale deployment/emtaf-tenant-service --replicas=0}

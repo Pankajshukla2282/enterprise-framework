@@ -1,0 +1,32 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: emtaf-training
+resources:
+- ../../base
+patchesStrategicMerge:
+- secret-patch.yaml
+images:
+- name: emtaf-tenant-service
+  newName: emtaf-tenant-service
+  newTag: sandbox
+- name: emtaf-hospital-service
+  newName: emtaf-hospital-service
+  newTag: sandbox
+- name: emtaf-school-service
+  newName: emtaf-school-service
+  newTag: sandbox
+- name: emtaf-college-service
+  newName: emtaf-college-service
+  newTag: sandbox
+- name: emtaf-hotel-service
+  newName: emtaf-hotel-service
+  newTag: sandbox
+- name: emtaf-realestate-service
+  newName: emtaf-realestate-service
+  newTag: sandbox
+- name: emtaf-demo-wireframe
+  newName: emtaf-demo-wireframe
+  newTag: sandbox
+- name: emtaf-migrations
+  newName: emtaf-migrations
+  newTag: sandbox

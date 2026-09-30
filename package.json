@@ -1,7 +1,7 @@
 {
   "name": "emtaf-saas",
   "private": true,
-  "version": "1.8.0",
+  "version": "1.10.0",
   "workspaces": [
     "core",
     "domains/*",
@@ -21,12 +21,16 @@
     "test:smoke": "node --test tests/release-smoke.test.js",
     "ops:build": "npm run build",
     "ops:test": "npm run test:smoke",
-    "images:build": "powershell -ExecutionPolicy Bypass -File ./scripts/build.ps1 -Target all -Mode local"
+    "images:build": "powershell -ExecutionPolicy Bypass -File ./scripts/build.ps1 -Target all -Mode local",
+    "test:integration": "node --test tests/integration/*.test.js",
+    "test:security": "node --test tests/security/*.test.js",
+    "test:all": "npm run test:smoke && npm run test:security && npm run test:integration",
+    "backup:verify": "node scripts/backup-verify.js",
+    "test:production": "npm run test:all && npm run test:production-config",
+    "test:production-config": "node --test tests/production-config.test.js",
+    "backup:restore-test": "node scripts/backup-verify.js"
   },
   "engines": {
     "node": ">=22"
-  },
-  "devDependencies": {
-    "typescript": "^7.0.2"
   }
 }

@@ -1,0 +1,3 @@
+const test=require('node:test'); const assert=require('node:assert/strict'); const fs=require('fs');
+const path=require('path'); const dist=path.join(__dirname,'../../core/dist/rbac.js');
+test('RBAC runtime matrix denies and allows expected hospital operations',{skip:!fs.existsSync(dist)},()=>{const {hasPermission}=require(dist);assert.equal(hasPermission('doctor','clinical:write'),true);assert.equal(hasPermission('doctor','billing:write'),false);assert.equal(hasPermission('patient','clinical:self'),true);assert.equal(hasPermission('patient','clinical:write'),false);assert.equal(hasPermission('receptionist','patients:write'),true);assert.equal(hasPermission('receptionist','clinical:write'),false);assert.equal(hasPermission('superadmin','anything:arbitrary'),true);});

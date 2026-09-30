@@ -1,0 +1,11 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: realestate-service}
+spec:
+ template:
+  spec:
+   containers:
+   - name: realestate-service
+     envFrom:
+     - configMapRef: {name: external-platform-config}
+     - secretRef: {name: emtaf-platform-secrets}

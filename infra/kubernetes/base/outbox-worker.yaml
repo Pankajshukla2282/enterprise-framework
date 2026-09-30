@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: emtaf-outbox-worker, namespace: emtaf}
+spec:
+ replicas: 1
+ selector: {matchLabels: {app: emtaf-outbox-worker}}
+ template:
+  metadata: {labels: {app.kubernetes.io/part-of: emtaf, app: emtaf-outbox-worker}}
+  spec:
+   serviceAccountName: emtaf-domain
+   containers:
+   - name: worker
+     image: emtaf-tenant-service:dev
+     imagePullPolicy: IfNotPresent
+     command: ["node","dist/outbox-worker.js"]
+     envFrom: [{configMapRef: {name: emtaf-platform-config}}, {secretRef: {name: emtaf-platform-secrets}}]
+     env:
+     - {name: OTEL_SERVICE_NAME, value: emtaf-outbox-worker}
+     resources: {requests: {cpu: 50m, memory: 96Mi}, limits: {cpu: 300m, memory: 256Mi}}

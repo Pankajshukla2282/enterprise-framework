@@ -1,0 +1,24 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata: {name: hospital-service, namespace: emtaf}
+spec: {minAvailable: 1, selector: {matchLabels: {app: hospital-service}}}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata: {name: school-service, namespace: emtaf}
+spec: {minAvailable: 1, selector: {matchLabels: {app: school-service}}}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata: {name: college-service, namespace: emtaf}
+spec: {minAvailable: 1, selector: {matchLabels: {app: college-service}}}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata: {name: hotel-service, namespace: emtaf}
+spec: {minAvailable: 1, selector: {matchLabels: {app: hotel-service}}}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata: {name: realestate-service, namespace: emtaf}
+spec: {minAvailable: 1, selector: {matchLabels: {app: realestate-service}}}

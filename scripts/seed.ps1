@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
-  [ValidateSet('dev','staging','prod')][string]$Environment = 'dev',
-  [string]$Namespace = 'emtaf',
+  [ValidateSet('dev','staging','prod','sandbox')][string]$Environment = 'dev',
+  [string]$Namespace = $(if ($Environment -eq 'sandbox') { 'emtaf-training' } else { 'emtaf' }),
   [string]$PostgresPassword = $(if ($env:POSTGRES_PASSWORD) { $env:POSTGRES_PASSWORD } else { 'emtaf-dev' })
 )
 $ErrorActionPreference = 'Stop'

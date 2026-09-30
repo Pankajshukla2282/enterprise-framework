@@ -1,42 +1,50 @@
 apiVersion: apps/v1
 kind: Deployment
-metadata: {name: realestate-service, namespace: {{ .Values.namespace }}}
+metadata:
+  name: realestate-service
+  namespace: {{ .Values.namespace }}
 spec:
- replicas: {{ .Values.replicaCount }}
- selector: {matchLabels: {app: realestate-service}}
- template:
-  metadata: {labels: {app: realestate-service}}
-  spec:
-   serviceAccountName: emtaf-domain
-   containers:
-   - name: realestate-service
-     image: {{ .Values.image }}
-     imagePullPolicy: {{ .Values.imagePullPolicy }}
-     env:
-     - {name: DATABASE_URL, valueFrom: {secretKeyRef: {name: emtaf-platform-secrets, key: DATABASE_URL}}}
-     - {name: JWT_SECRET, valueFrom: {secretKeyRef: {name: emtaf-platform-secrets, key: JWT_SECRET}}}
-     - {name: REDIS_URL, value: redis://redis:6379}
-     - {name: KAFKA_BROKERS, value: redpanda:9092}
-     ports: [{containerPort: 3000}]
-     resources: {{- toYaml .Values.resources | nindent 6 }}
-     startupProbe: {httpGet: {path: /health/live, port: 3000}, failureThreshold: 30, periodSeconds: 5}
-     readinessProbe: {httpGet: {path: /health/ready, port: 3000}, periodSeconds: 10}
-     livenessProbe: {httpGet: {path: /health/live, port: 3000}, periodSeconds: 20}
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels: {app: realestate-service}
+  template:
+    metadata:
+      labels: {app: realestate-service}
+    spec:
+      serviceAccountName: emtaf-domain
+      containers:
+      - name: realestate-service
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.imagePullPolicy }}
+        envFrom:
+        - configMapRef: {name: {{ .Values.envFromConfig }}}
+        - secretRef: {name: {{ .Values.envFromSecret }}}
+        ports: [{containerPort: 3000}]
+        resources: {{- toYaml .Values.resources | nindent 10 }}
+        startupProbe: {httpGet: {path: /health/live, port: 3000}, failureThreshold: 30, periodSeconds: 5}
+        readinessProbe: {httpGet: {path: /health/ready, port: 3000}, periodSeconds: 10}
+        livenessProbe: {httpGet: {path: /health/live, port: 3000}, periodSeconds: 20}
 ---
 apiVersion: v1
 kind: Service
-metadata: {name: realestate-service, namespace: {{ .Values.namespace }}}
-spec: {selector: {app: realestate-service}, ports: [{name: http, port: 80, targetPort: 3000}]}
+metadata:
+  name: realestate-service
+  namespace: {{ .Values.namespace }}
+spec:
+  selector: {app: realestate-service}
+  ports: [{name: http, port: 80, targetPort: 3000}]
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
-metadata: {name: realestate-service, namespace: {{ .Values.namespace }}}
+metadata:
+  name: realestate-service
+  namespace: {{ .Values.namespace }}
 spec:
- scaleTargetRef: {apiVersion: apps/v1, kind: Deployment, name: realestate-service}
- minReplicas: {{ .Values.hpa.minReplicas }}
- maxReplicas: {{ .Values.hpa.maxReplicas }}
- metrics:
- - type: Resource
-   resource: {name: cpu, target: {type: Utilization, averageUtilization: {{ .Values.hpa.cpu }}}}
- - type: Resource
-   resource: {name: memory, target: {type: Utilization, averageUtilization: {{ .Values.hpa.memory }}}}
+  scaleTargetRef: {apiVersion: apps/v1, kind: Deployment, name: realestate-service}
+  minReplicas: {{ .Values.hpa.minReplicas }}
+  maxReplicas: {{ .Values.hpa.maxReplicas }}
+  metrics:
+  - type: Resource
+    resource: {name: cpu, target: {type: Utilization, averageUtilization: {{ .Values.hpa.cpu }}}}
+  - type: Resource
+    resource: {name: memory, target: {type: Utilization, averageUtilization: {{ .Values.hpa.memory }}}}

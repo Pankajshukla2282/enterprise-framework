@@ -1,0 +1,2 @@
+[CmdletBinding()]param([Parameter(Mandatory=$true)][string]$Backup,[Parameter(Mandatory=$true)][string]$VerifyDatabaseUrl)
+$ErrorActionPreference='Stop'; if(-not(Get-Command pg_restore -ErrorAction SilentlyContinue)){throw 'pg_restore is required'}; pg_restore --clean --if-exists --no-owner --dbname $VerifyDatabaseUrl $Backup; if($LASTEXITCODE -ne 0){throw 'Restore failed'}; psql $VerifyDatabaseUrl -v ON_ERROR_STOP=1 -c "select 1 from tenants limit 1;" | Out-Null; if($LASTEXITCODE -ne 0){throw 'Post-restore smoke query failed'}; Write-Host 'DR restore verification passed.'

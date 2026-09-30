@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata: {name: external-platform-config, namespace: emtaf}
+data:
+  KAFKA_BROKERS: "SET_BY_OPERATOR"
+  REDIS_URL: "redis://SET_BY_OPERATOR"
+  DB_SSL: "true"
+  OTEL_ENABLED: "true"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "SET_BY_OPERATOR"
+  NODE_ENV: "production"
+  SERVICE_VERSION: "1.10.0"

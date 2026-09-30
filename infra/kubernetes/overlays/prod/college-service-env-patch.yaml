@@ -1,0 +1,11 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: college-service}
+spec:
+ template:
+  spec:
+   containers:
+   - name: college-service
+     envFrom:
+     - configMapRef: {name: external-platform-config}
+     - secretRef: {name: emtaf-platform-secrets}

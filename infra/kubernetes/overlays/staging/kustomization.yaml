@@ -3,30 +3,40 @@ kind: Kustomization
 namespace: emtaf
 resources:
 - ../../base
+- external-config.yaml
+- external-secrets.yaml
+- external-egress.yaml
 images:
-- name: emtaf-tenant
-  newName: emtaf-tenant
-  newTag: dev
-- name: emtaf-hospital
-  newName: emtaf-hospital
-  newTag: dev
-- name: emtaf-school
-  newName: emtaf-school
-  newTag: dev
-- name: emtaf-college
-  newName: emtaf-college
-  newTag: dev
-- name: emtaf-hotel
-  newName: emtaf-hotel
-  newTag: dev
-- name: emtaf-realestate
-  newName: emtaf-realestate
-  newTag: dev
-- name: emtaf-demo-wireframe
-  newName: emtaf-demo-wireframe
-  newTag: dev
+- name: emtaf-tenant-service
+  newName: REGISTRY/emtaf-tenant-service
+  newTag: IMAGE_TAG
+- name: emtaf-hospital-service
+  newName: REGISTRY/emtaf-hospital-service
+  newTag: IMAGE_TAG
+- name: emtaf-school-service
+  newName: REGISTRY/emtaf-school-service
+  newTag: IMAGE_TAG
+- name: emtaf-college-service
+  newName: REGISTRY/emtaf-college-service
+  newTag: IMAGE_TAG
+- name: emtaf-hotel-service
+  newName: REGISTRY/emtaf-hotel-service
+  newTag: IMAGE_TAG
+- name: emtaf-realestate-service
+  newName: REGISTRY/emtaf-realestate-service
+  newTag: IMAGE_TAG
 - name: emtaf-migrations
-  newName: emtaf-migrations
-  newTag: dev
-patchesStrategicMerge:
-- ../dev/secret-patch.yaml
+  newName: REGISTRY/emtaf-migrations
+  newTag: IMAGE_TAG
+
+patches:
+- path: remove-platform-infra.yaml
+- path: remove-demo.yaml
+- path: hospital-service-env-patch.yaml
+- path: school-service-env-patch.yaml
+- path: college-service-env-patch.yaml
+- path: hotel-service-env-patch.yaml
+- path: realestate-service-env-patch.yaml
+- path: tenant-env-patch.yaml
+- path: worker-env-patch.yaml
+- path: migration-env-patch.yaml

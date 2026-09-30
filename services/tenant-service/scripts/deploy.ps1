@@ -1,0 +1,1 @@
+[CmdletBinding()] param([ValidateSet('dev','staging','prod')][string]$Environment='dev',[ValidateSet('local','cloud')][string]$ImageMode='local',[string]$Registry='',[string]$Tag='dev'); $root=Resolve-Path (Join-Path $PSScriptRoot '..\..\..'); & (Join-Path $root 'scripts\start.ps1') -Environment $Environment -ImageMode $ImageMode -Registry $Registry -Tag $Tag
