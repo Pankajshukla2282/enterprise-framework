@@ -1,0 +1,14 @@
+role,question,expected_focus
+all_staff,What tenant are you working in?,tenant context
+all_staff,What should you do if a critical operation appears to fail?,verify result and escalate before retry
+hospital_receptionist,What should you do before creating a new patient?,search and verify to prevent duplicates
+hospital_doctor,What must be verified before documenting an encounter?,patient and encounter context
+hospital_nurse,What should happen if bed status conflicts with the screen?,stop and escalate through supported workflow
+hospital_accountant,What should happen before retrying an ambiguous payment?,verify transaction result and reconcile
+hospital_admin,How should a new user's permissions be selected?,least privilege
+hospital_superadmin,What is required before assigning a role?,verified identity and business need
+school_staff,How should attendance corrections be handled?,controlled correction with auditability
+college_staff,How should exam/result changes be controlled?,authorized correction/approval workflow
+hotel_staff,What should be verified before check-in?,guest booking and room status
+realestate_staff,What must be verified before recording a lease payment?,unit/lease/payment context
+platform_admin_devops,What should be preserved during an incident?,logs audit evidence and change history
