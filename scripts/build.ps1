@@ -11,6 +11,7 @@ param(
 $ErrorActionPreference='Stop'
 $Root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 Set-Location $Root
+if (Get-Command node -ErrorAction SilentlyContinue) { node ./scripts/validate-workspaces.js } else { throw 'Node.js is required for workspace validation.' }
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) { throw 'Docker is required.' }
 $targets = if ($Target -eq 'all') { @('tenant','hospital','school','college','hotel','realestate','demo','migrations') } else { @($Target) }
 $map=@{tenant='services/tenant-service/Dockerfile';hospital='domains/hospital-service/Dockerfile';school='domains/school-service/Dockerfile';college='domains/college-service/Dockerfile';hotel='domains/hotel-service/Dockerfile';realestate='domains/realestate-service/Dockerfile';demo='demo-wireframe/Dockerfile';migrations='infra/migrations/Dockerfile'}
