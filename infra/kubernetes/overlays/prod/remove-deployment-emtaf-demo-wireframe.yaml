@@ -1,0 +1,4 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: emtaf-demo-wireframe, namespace: emtaf}
+$patch: delete

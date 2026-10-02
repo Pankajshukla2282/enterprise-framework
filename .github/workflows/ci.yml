@@ -62,17 +62,17 @@ jobs:
     strategy:
       matrix:
         include:
-        - name: tenant
+        - name: tenant-service
           dockerfile: services/tenant-service/Dockerfile
-        - name: hospital
+        - name: hospital-service
           dockerfile: domains/hospital-service/Dockerfile
-        - name: school
+        - name: school-service
           dockerfile: domains/school-service/Dockerfile
-        - name: college
+        - name: college-service
           dockerfile: domains/college-service/Dockerfile
-        - name: hotel
+        - name: hotel-service
           dockerfile: domains/hotel-service/Dockerfile
-        - name: realestate
+        - name: realestate-service
           dockerfile: domains/realestate-service/Dockerfile
         - name: migrations
           dockerfile: infra/migrations/Dockerfile
@@ -84,14 +84,14 @@ jobs:
       with:
         context: .
         file: ${{ matrix.dockerfile }}
-        tags: emtaf/${{ matrix.name }}:${{ github.sha }}
+        tags: emtaf-${{ matrix.name }}:${{ github.sha }}
         load: true
         provenance: true
         sbom: true
     - name: Trivy scan
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: emtaf/${{ matrix.name }}:${{ github.sha }}
+        image-ref: emtaf-${{ matrix.name }}:${{ github.sha }}
         severity: 'CRITICAL,HIGH'
         exit-code: '1'
         ignore-unfixed: true
@@ -144,17 +144,17 @@ jobs:
     strategy:
       matrix:
         include:
-        - name: tenant
+        - name: tenant-service
           dockerfile: services/tenant-service/Dockerfile
-        - name: hospital
+        - name: hospital-service
           dockerfile: domains/hospital-service/Dockerfile
-        - name: school
+        - name: school-service
           dockerfile: domains/school-service/Dockerfile
-        - name: college
+        - name: college-service
           dockerfile: domains/college-service/Dockerfile
-        - name: hotel
+        - name: hotel-service
           dockerfile: domains/hotel-service/Dockerfile
-        - name: realestate
+        - name: realestate-service
           dockerfile: domains/realestate-service/Dockerfile
         - name: migrations
           dockerfile: infra/migrations/Dockerfile

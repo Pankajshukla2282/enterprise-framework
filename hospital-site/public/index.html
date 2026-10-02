@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Demo City Hospital</title><link rel="stylesheet" href="styles.css"></head>
+<body>
+<header><h1>Demo City Hospital</h1><p>EMTAF demo patient portal</p></header>
+<main>
+  <section class="cards" id="dashboard"></section>
+  <h2>Active patients</h2>
+  <table id="patients"><thead><tr><th>MRN</th><th>Name</th><th>DOB</th><th>Phone</th></tr></thead><tbody></tbody></table>
+</main>
+<script>
+fetch('/api/v1/hospital/dashboard').then(r=>r.json()).then(d=>{
+  document.getElementById('dashboard').innerHTML = Object.entries(d).map(([k,v])=>`<div class="card"><h3>${k}</h3><p>${v}</p></div>`).join('');
+}).catch(()=>{});
+fetch('/api/v1/hospital/patients').then(r=>r.json()).then(rows=>{
+  document.querySelector('#patients tbody').innerHTML = (rows||[]).map(r=>`<tr><td>${r.mrn}</td><td>${r.first_name} ${r.last_name}</td><td>${r.dob??''}</td><td>${r.phone??''}</td></tr>`).join('');
+}).catch(()=>{});
+</script>
+</body></html>

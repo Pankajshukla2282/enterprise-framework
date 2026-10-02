@@ -6,15 +6,15 @@ import { db, audit, events } from '@emtaf/core';
 import { context, permission, error, json } from '@emtaf/core/dist/http';
 
 startTelemetry(process.env.OTEL_SERVICE_NAME||'school-service');
-const app=express(); app.disable('x-powered-by'); app.set('trust proxy', process.env.TRUST_PROXY||'1'); app.use(cors({origin:(process.env.CORS_ORIGINS||'').split(',').map((v:string)=>v.trim()).filter(Boolean),credentials:true})); app.use(rateLimit({windowMs:Number(process.env.RATE_LIMIT_WINDOW_MS||60000),limit:Number(process.env.RATE_LIMIT_MAX||300),standardHeaders:'draft-7',legacyHeaders:false,skip:(req:any)=>req.path.startsWith('/health')||req.path==='/metrics'}));
+const app = express(); app.disable('x-powered-by'); app.set('trust proxy', process.env.TRUST_PROXY||'1'); app.use(cors({origin:(process.env.CORS_ORIGINS||'').split(',').map((v:string)=>v.trim()).filter(Boolean),credentials:true})); app.use(rateLimit({windowMs:Number(process.env.RATE_LIMIT_WINDOW_MS||60000),limit:Number(process.env.RATE_LIMIT_MAX||300),standardHeaders:'draft-7',legacyHeaders:false,skip:(req:any)=>req.path.startsWith('/health')||req.path==='/metrics'}));
 app.use(helmet({contentSecurityPolicy:process.env.NODE_ENV==='production'?undefined:false})); app.use(express.json({limit:'1mb'})); client.collectDefaultMetrics();
-app.get('/health/live',(_,res)=>res.json({status:'ok',service:'school-service',version:process.env.SERVICE_VERSION||'1.10.0'}));
+app.get('/health/live',(_,res)=>res.json({status:'ok',service:'school-service',version:process.env.SERVICE_VERSION||'1.10.5'}));
 app.get('/health/ready',async(_,res)=>{try{await db.query('select 1');res.json({status:'ready'})}catch{res.status(503).json({status:'not-ready'})}});
 app.get('/metrics',async(_,res)=>{res.setHeader('Content-Type',client.register.contentType);res.end(await client.register.metrics())});
 app.use((req,res,next)=>{if(req.path.startsWith('/health')||req.path==='/metrics') return next(); context(req).then(()=>next()).catch(e=>error(res,e))});
 const tenant=(req:any)=>req.emtaf.tenantId;
-const run=(fn:any)=>(req:any,res:any)=>Promise.resolve().then(()=>fn(req,res)).catch(e=>error(res,e));
-const q=(req:any,sql:string,values:any[]=[])=>db.withTenant(tenant(req),c=>c.query(sql,values));
+const run=(fn: import('express').RequestHandler): import('express').RequestHandler => (req,res,next)=>Promise.resolve().then(()=>fn(req,res,next)).catch(e=>error(res,e));
+const q=(req:any,sql:string,values:any[]=[])=>db.withTenant(tenant(req),c=>c.query(sql,values)) as Promise<any>;
 
 app.get('/api/v1/school/me',(req,res)=>json(res,{userId:req.emtaf.userId,tenantId:tenant(req),roles:req.emtaf.roles}));
 app.get('/api/v1/school/dashboard',run(async(req,res)=>{permission('students:read')(req);const [s,c,a]=await Promise.all([q(req,"select count(*)::int count from school_students where status='active'"),q(req,"select count(*)::int count from school_classes where status='active'"),q(req,'select count(*)::int count from school_attendance where attendance_date=current_date')]);json(res,{students:s.rows[0].count,classes:c.rows[0].count,todaysAttendance:a.rows[0].count})}));

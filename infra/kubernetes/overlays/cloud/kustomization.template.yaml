@@ -37,5 +37,3 @@ images:
 - name: emtaf-migrations
   newName: __EMTAF_REGISTRY__/emtaf-migrations
   newTag: __EMTAF_TAG__
-patchesStrategicMerge:
-- ../../dev/secret-patch.yaml

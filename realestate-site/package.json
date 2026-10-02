@@ -1,0 +1,1 @@
+{"name":"realestate-site","private":true,"type":"module","scripts":{"start":"node server.mjs","token":"node mint-dev-token.mjs realestate.admin@demo.local demo-realestate"}}

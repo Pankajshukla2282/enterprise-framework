@@ -15,5 +15,6 @@ resources:
 - demo-wireframe.yaml
 - resource-limits.yaml
 - observability.yaml
+- otel-collector-config.yaml
 - migration-job.yaml
 - outbox-worker.yaml

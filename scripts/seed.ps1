@@ -16,4 +16,8 @@ Write-Host "[EMTAF] Seeding sample data into $Namespace ($Environment)..."
 $sql = Get-Content -Raw -LiteralPath $SeedFile
 # Feed the deterministic SQL through kubectl stdin; the SQL itself is idempotent.
 $sql | kubectl -n $Namespace exec -i $pod -- env "PGPASSWORD=$PostgresPassword" psql -U emtaf -d emtaf -v ON_ERROR_STOP=1
+if ($LASTEXITCODE -ne 0) {
+  Write-Error "Seed SQL failed (psql exit code $LASTEXITCODE). Sample data was NOT fully applied."
+  exit $LASTEXITCODE
+}
 Write-Host '[EMTAF] Sample data seeded successfully.'

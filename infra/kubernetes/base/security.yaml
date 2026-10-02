@@ -29,7 +29,17 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata: {name: allow-domain-ingress, namespace: emtaf}
 spec:
- podSelector: {matchExpressions: [{key: app, operator: In, values: [hospital-service, school-service, college-service, hotel-service, realestate-service]}]}
+ podSelector: {matchExpressions: [{key: app, operator: In, values: [hospital-service, school-service, college-service, hotel-service, realestate-service, emtaf-tenant-service, emtaf-demo-wireframe]}]}
  policyTypes: [Ingress]
  ingress:
  - ports: [{protocol: TCP, port: 3000}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: allow-platform-ingress, namespace: emtaf}
+spec:
+ podSelector: {matchExpressions: [{key: app, operator: In, values: [postgres, redis, redpanda, otel-collector]}]}
+ policyTypes: [Ingress]
+ ingress:
+ - from: [{podSelector: {matchLabels: {app.kubernetes.io/part-of: emtaf}}}]
+   ports: [{protocol: TCP, port: 5432}, {protocol: TCP, port: 6379}, {protocol: TCP, port: 9092}, {protocol: TCP, port: 4317}, {protocol: TCP, port: 4318}, {protocol: TCP, port: 13133}]

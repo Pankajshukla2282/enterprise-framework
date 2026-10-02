@@ -1,6 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
-metadata: {name: emtaf-outbox-worker}
+metadata: {name: emtaf-outbox-worker, namespace: emtaf}
 spec:
  template:
   spec:

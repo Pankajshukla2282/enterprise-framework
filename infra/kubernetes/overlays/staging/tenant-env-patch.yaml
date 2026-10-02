@@ -1,6 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
-metadata: {name: emtaf-tenant-service}
+metadata: {name: emtaf-tenant-service, namespace: emtaf}
 spec:
  template:
   spec:

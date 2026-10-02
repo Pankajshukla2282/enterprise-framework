@@ -7,7 +7,7 @@ param(
 )
 $ErrorActionPreference='Stop'
 if(-not(Get-Command docker -ErrorAction SilentlyContinue)){throw 'Docker is required.'}
-$names=@('tenant','hospital','school','college','hotel','realestate','demo-wireframe','migrations') | ForEach-Object { "emtaf-$_`:$Tag" }
+$names=@('tenant-service','hospital-service','school-service','college-service','hotel-service','realestate-service','demo-wireframe','migrations') | ForEach-Object { "emtaf-$_`:$Tag" }
 if($IncludePlatform){$names += @('postgres:16-alpine','redis:7-alpine','docker.redpanda.com/redpandadata/redpanda:v24.3.5','node:22-alpine','nginx:1.27-alpine')}
 if($Action -eq 'list'){ $names | ForEach-Object { docker image inspect $_ --format '{{.RepoTags}}' 2>$null }; exit 0 }
 if($Action -eq 'save'){

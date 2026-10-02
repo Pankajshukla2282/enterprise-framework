@@ -1,6 +1,6 @@
 apiVersion: batch/v1
 kind: Job
-metadata: {name: emtaf-migrations}
+metadata: {name: emtaf-migrations, namespace: emtaf}
 spec:
  template:
   spec:

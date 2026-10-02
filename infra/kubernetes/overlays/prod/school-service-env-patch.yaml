@@ -1,6 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
-metadata: {name: school-service}
+metadata: {name: school-service, namespace: emtaf}
 spec:
  template:
   spec:

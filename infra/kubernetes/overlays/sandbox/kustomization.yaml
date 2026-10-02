@@ -3,8 +3,8 @@ kind: Kustomization
 namespace: emtaf-training
 resources:
 - ../../base
-patchesStrategicMerge:
-- secret-patch.yaml
+patches:
+- path: secret-patch.yaml
 images:
 - name: emtaf-tenant-service
   newName: emtaf-tenant-service

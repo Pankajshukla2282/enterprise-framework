@@ -8,8 +8,16 @@ resources:
 - external-egress.yaml
 - pdbs.yaml
 patches:
-- path: remove-platform-infra.yaml
-- path: remove-demo.yaml
+- path: remove-deployment-postgres.yaml
+- path: remove-deployment-redis.yaml
+- path: remove-deployment-redpanda.yaml
+- path: remove-service-postgres.yaml
+- path: remove-service-redis.yaml
+- path: remove-service-redpanda.yaml
+- path: remove-secret-postgres-secret.yaml
+- path: remove-deployment-emtaf-demo-wireframe.yaml
+- path: remove-service-emtaf-demo-wireframe.yaml
+- path: drop-demo-from-ingress-policy.yaml
 - path: hospital-service-env-patch.yaml
 - path: school-service-env-patch.yaml
 - path: college-service-env-patch.yaml

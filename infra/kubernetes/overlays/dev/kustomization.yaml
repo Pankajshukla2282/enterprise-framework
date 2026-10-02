@@ -28,8 +28,6 @@ images:
 - name: emtaf-migrations
   newName: emtaf-migrations
   newTag: dev
-- name: emtaf-tenant-service
-  newName: emtaf-tenant-service
-  newTag: dev
-patchesStrategicMerge:
-- secret-patch.yaml
+patches:
+- path: postgres-secret-patch.yaml
+- path: platform-secrets-patch.yaml

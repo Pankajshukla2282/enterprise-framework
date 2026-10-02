@@ -12,7 +12,7 @@ spec:
    - name: worker
      image: emtaf-tenant-service:dev
      imagePullPolicy: IfNotPresent
-     command: ["node","dist/outbox-worker.js"]
+     command: ["node","core/dist/outbox-worker.js"]
      envFrom: [{configMapRef: {name: emtaf-platform-config}}, {secretRef: {name: emtaf-platform-secrets}}]
      env:
      - {name: OTEL_SERVICE_NAME, value: emtaf-outbox-worker}

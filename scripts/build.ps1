@@ -16,7 +16,16 @@ if (-not (Get-Command docker -ErrorAction SilentlyContinue)) { throw 'Docker is 
 $targets = if ($Target -eq 'all') { @('tenant','hospital','school','college','hotel','realestate','demo','migrations') } else { @($Target) }
 $map=@{tenant='services/tenant-service/Dockerfile';hospital='domains/hospital-service/Dockerfile';school='domains/school-service/Dockerfile';college='domains/college-service/Dockerfile';hotel='domains/hotel-service/Dockerfile';realestate='domains/realestate-service/Dockerfile';demo='demo-wireframe/Dockerfile';migrations='infra/migrations/Dockerfile'}
 foreach($name in $targets){
-  $repo = "emtaf-$name"
+  $repo = switch($name){
+    'tenant'{'emtaf-tenant-service'}
+    'hospital'{'emtaf-hospital-service'}
+    'school'{'emtaf-school-service'}
+    'college'{'emtaf-college-service'}
+    'hotel'{'emtaf-hotel-service'}
+    'realestate'{'emtaf-realestate-service'}
+    'demo'{'emtaf-demo-wireframe'}
+    'migrations'{'emtaf-migrations'}
+  }
   $image = if($Mode -eq 'cloud') { if([string]::IsNullOrWhiteSpace($Registry)){throw 'Registry is required in cloud mode. Use -Registry ghcr.io/your-org (or your ECR/ACR/GAR repository).'} else { "$Registry/$repo`:$Tag" } } else { "$repo`:$Tag" }
   Write-Host "[EMTAF] Building $image"
   docker build --provenance=$($Provenance.ToString().ToLower()) --sbom=$($Provenance.ToString().ToLower()) -f $map[$name] -t $image .

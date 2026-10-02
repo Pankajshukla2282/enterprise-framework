@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Demo Realty Group</title><link rel="stylesheet" href="styles.css"></head>
+<body>
+<header><h1>Demo Realty Group</h1><p>EMTAF demo property portal</p></header>
+<main>
+  <section class="cards" id="dashboard"></section>
+  <h2>Properties</h2>
+  <table id="properties"><thead><tr><th>Code</th><th>Name</th><th>Type</th><th>City</th></tr></thead><tbody></tbody></table>
+  <h2>Published listings</h2>
+  <table id="listings"><thead><tr><th>Title</th><th>Property</th><th>Unit</th><th>Price</th></tr></thead><tbody></tbody></table>
+</main>
+<script>
+fetch('/api/v1/realestate/dashboard').then(r=>r.json()).then(d=>{
+  document.getElementById('dashboard').innerHTML = Object.entries(d).map(([k,v])=>`<div class="card"><h3>${k}</h3><p>${v}</p></div>`).join('');
+}).catch(()=>{});
+fetch('/api/v1/realestate/properties').then(r=>r.json()).then(rows=>{
+  document.querySelector('#properties tbody').innerHTML = (rows||[]).map(r=>`<tr><td>${r.property_code}</td><td>${r.name}</td><td>${r.property_type}</td><td>${r.city}</td></tr>`).join('');
+}).catch(()=>{});
+fetch('/api/v1/realestate/listings').then(r=>r.json()).then(rows=>{
+  document.querySelector('#listings tbody').innerHTML = (rows||[]).map(r=>`<tr><td>${r.title}</td><td>${r.property_name??''}</td><td>${r.unit_no??''}</td><td>${r.price}</td></tr>`).join('');
+}).catch(()=>{});
+</script>
+</body></html>

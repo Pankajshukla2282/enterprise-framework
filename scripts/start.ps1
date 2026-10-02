@@ -24,6 +24,7 @@ if($ImageMode -eq 'cloud'){
  foreach($f in $files){
    $content=Get-Content $f.FullName -Raw
    $content=$content.Replace('REGISTRY/',$Registry.TrimEnd('/')+'/').Replace('IMAGE_TAG',$Tag).Replace('REPLACE_WITH_MANAGED_PLATFORM_CIDR',$ManagedPlatformCidr).Replace('emtaf-secret-store',$SecretStoreName)
+   $content=$content.Replace('- ../../base', '- ../../../base')
    Set-Content $f.FullName $content -Encoding utf8
  }
  if($Environment -in @('prod','staging')){
