@@ -30,3 +30,15 @@ images:
 - name: emtaf-migrations
   newName: emtaf-migrations
   newTag: sandbox
+
+- name: emtaf-skin-clinic-site
+  newName: emtaf-skin-clinic-site
+  newTag: sandbox
+
+- name: emtaf-eecp-clinic-site
+  newName: emtaf-eecp-clinic-site
+  newTag: sandbox
+
+- name: emtaf-physiotherapy-site
+  newName: emtaf-physiotherapy-site
+  newTag: sandbox

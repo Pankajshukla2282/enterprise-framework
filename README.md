@@ -69,3 +69,34 @@ See `docs/PRODUCTION-HARDENING-v1.9.1.md`. Critical Hospital writes now support 
 
 ## v1.10 production hardening
 See `docs/PRODUCTION-READY-v1.10.md` for the controlled-production acceptance gate. Production/staging use external managed PostgreSQL/Redis/Event Bus and external secrets; local/dev/sandbox can continue to use the in-cluster platform infrastructure.
+
+
+## Domain Web Applications
+
+See `docs/DOMAIN_WEBSITES.md` for the five independently runnable EMTAF domain web applications: hospital, school, college, hotel and real estate.
+
+
+## Specialty Clinic Web Applications (v1.11.1)
+
+The hospital platform now supports dedicated tenant-scoped specialty workflows:
+- `skin-clinic-site` — Skin & Cosmetics, port 3006
+- `eecp-clinic-site` — Cardiac EECP Therapy, port 3007
+- `physiotherapy-site` — Physiotherapy, port 3008
+
+These sites share the hospital patient registry and `hospital-service` APIs while remaining independently buildable and deployable.
+
+### Build-site fix
+
+`./scripts/build.ps1 -Mode local -Target all` now uses each `*-site` directory as its Docker build context. This prevents `COPY public` / `COPY server.mjs` failures when Docker Desktop builds the site images.
+
+## Specialty Clinic Products
+
+EMTAF now provides three independently deployable specialty products backed by the multi-tenant hospital clinical platform:
+
+- Skin & Cosmetics — `skin-clinic-site` — port 3006
+- Cardiac EECP Therapy — `eecp-clinic-site` — port 3007
+- Physiotherapy & Rehabilitation — `physiotherapy-site` — port 3008
+
+Each product has its own dashboard/navigation, specialty RBAC roles, clinical workflow, appointment lifecycle, billing packages/invoices, reports and patient portal. The specialty data remains tenant-scoped and protected by the EMTAF authorization/RLS model.
+
+See `RELEASE_NOTES_v1.11.2_BUILD_AND_SPECIALTY_PRODUCTS.md` for the implementation and validation details.

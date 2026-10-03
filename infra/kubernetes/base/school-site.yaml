@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: school-site
+  labels: {app: school-site}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: school-site}
+  template:
+    metadata:
+      labels: {app: school-site}
+    spec:
+      serviceAccountName: emtaf-domain
+      containers:
+      - name: school-site
+        image: emtaf-school-site:dev
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3003
+        env:
+        - name: PORT
+          value: "3003"
+        - name: API_BASE
+          value: "http://school-service"
+        resources:
+          requests: {cpu: 25m, memory: 32Mi}
+          limits: {cpu: 200m, memory: 128Mi}
+        readinessProbe:
+          httpGet: {path: /, port: 3003}
+          initialDelaySeconds: 2
+          periodSeconds: 10
+        livenessProbe:
+          httpGet: {path: /, port: 3003}
+          initialDelaySeconds: 10
+          periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: school-site
+spec:
+  selector: {app: school-site}
+  ports:
+  - port: 80
+    targetPort: 3003

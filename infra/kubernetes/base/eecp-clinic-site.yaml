@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: eecp-clinic-site
+  labels: {app: eecp-clinic-site}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: eecp-clinic-site}
+  template:
+    metadata:
+      labels: {app: eecp-clinic-site}
+    spec:
+      serviceAccountName: emtaf-domain
+      containers:
+      - name: eecp-clinic-site
+        image: emtaf-eecp-clinic-site:dev
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3007
+        env:
+        - name: PORT
+          value: "3007"
+        - name: API_BASE
+          value: "http://hospital-service"
+        resources:
+          requests: {cpu: 25m, memory: 32Mi}
+          limits: {cpu: 200m, memory: 128Mi}
+        readinessProbe:
+          httpGet: {path: /, port: 3007}
+          initialDelaySeconds: 2
+          periodSeconds: 10
+        livenessProbe:
+          httpGet: {path: /, port: 3007}
+          initialDelaySeconds: 10
+          periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: eecp-clinic-site
+spec:
+  selector: {app: eecp-clinic-site}
+  ports:
+  - port: 80
+    targetPort: 3007

@@ -56,13 +56,14 @@ export class Database {
   async idempotent<T>(tenantId:string,userId:string,key:string,requestHash:string,fn:(c:PoolClient)=>Promise<{statusCode?:number;body:T}>):Promise<IdempotencyResult<T>>{
     if(!key || key.length>200) fail('Invalid Idempotency-Key',400);
     return this.withTenant(tenantId, async c=>{
-      await c.query("INSERT INTO platform_idempotency(tenant_id,user_id,key,request_hash,status,processing_expires_at) VALUES($1,$2,$3,$4,'processing',now()+interval '2 minutes') ON CONFLICT (tenant_id,key) DO UPDATE SET processing_expires_at=CASE WHEN platform_idempotency.status='processing' AND platform_idempotency.processing_expires_at < now() THEN now()+interval '2 minutes' ELSE platform_idempotency.processing_expires_at END",[tenantId,userId,key,requestHash]);
+      const upsert=await c.query("INSERT INTO platform_idempotency(tenant_id,user_id,key,request_hash,status,processing_expires_at) VALUES($1,$2,$3,$4,'processing',now()+interval '2 minutes') ON CONFLICT (tenant_id,key) DO UPDATE SET processing_expires_at=CASE WHEN platform_idempotency.status='processing' AND platform_idempotency.processing_expires_at < now() THEN now()+interval '2 minutes' ELSE platform_idempotency.processing_expires_at END RETURNING (xmax = 0) AS inserted",[tenantId,userId,key,requestHash]);
+      const inserted=upsert.rows[0]?.inserted===true;
       const existing=await c.query('SELECT user_id,request_hash,status,status_code,response_body,processing_expires_at FROM platform_idempotency WHERE tenant_id=$1 AND key=$2 FOR UPDATE',[tenantId,key]);
       if(!existing.rowCount) fail('Unable to create idempotency record',500);
       const row=existing.rows[0];
       if(String(row.user_id)!==String(userId)) fail('Idempotency-Key belongs to a different user',409);
       if(row.request_hash!==requestHash) fail('Idempotency-Key was already used with a different request',409);
-      if(row.status==='processing' && row.processing_expires_at && new Date(row.processing_expires_at).getTime() > Date.now()) fail('Idempotent request is currently being processed',409);
+      if(!inserted && row.status==='processing' && row.processing_expires_at && new Date(row.processing_expires_at).getTime() > Date.now()) fail('Idempotent request is currently being processed',409);
       if(row.status==='completed') return {replayed:true,statusCode:row.status_code||200,body:row.response_body};
       const result=await fn(c);
       const statusCode=result.statusCode||200;
@@ -79,7 +80,8 @@ export class Database {
 }
 
 export const db=new Database();
-export const redis=new Redis(process.env.REDIS_URL||'redis://redis:6379',{maxRetriesPerRequest:3});
+export const redis=new Redis(process.env.REDIS_URL||'redis://redis:6379',{maxRetriesPerRequest:3,family:4,enableReadyCheck:true,retryStrategy:(times:number)=>Math.min(times*200,5000),reconnectOnError:(err:Error)=>{const msg=String(err?.message||'');return msg.includes('READONLY')||msg.includes('ETIMEDOUT')||msg.includes('ECONNRESET');}});
+redis.on('error',(err:Error)=>{if((process.env.NODE_ENV||'').toLowerCase()!=='test') console.error('[redis]',err?.message);});
 
 export async function authorizeTenant(auth:AuthContext):Promise<AuthContext>{
   const q=await db.query<{status:string;roles:string[]}>('SELECT t.status,m.roles FROM tenant_memberships m JOIN tenants t ON t.id=m.tenant_id WHERE m.tenant_id=$1 AND m.user_id=$2 AND m.status=\'active\'',[auth.tenantId,auth.userId]);

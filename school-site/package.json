@@ -1,0 +1,1 @@
+{"name":"school-site","private":true,"type":"module","scripts":{"start":"node server.mjs","token":"node mint-dev-token.mjs school.admin@demo.local demo-school"}}

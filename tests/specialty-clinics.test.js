@@ -1,0 +1,3 @@
+const test=require("node:test");const assert=require("node:assert/strict");const fs=require("node:fs");const path=require("node:path");const root=path.resolve(__dirname,"..");
+for(const site of ["skin-clinic-site","eecp-clinic-site","physiotherapy-site"]){test(site,()=>{const s=fs.readFileSync(path.join(root,site,"public/index.html"),"utf8");for(const x of ["appointments","billing-packages","billing-invoices","reports","patient-portal"])assert.ok(s.includes('"id":"'+x+'"'),x);});}
+test("telemetry Resource compatibility",()=>{const s=fs.readFileSync(path.join(root,"core/src/telemetry.ts"),"utf8");assert.ok(s.includes("resourceFromAttributes"));assert.ok(!s.includes("new Resource("));});

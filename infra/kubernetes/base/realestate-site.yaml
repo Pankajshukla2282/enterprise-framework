@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: realestate-site
+  labels: {app: realestate-site}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: realestate-site}
+  template:
+    metadata:
+      labels: {app: realestate-site}
+    spec:
+      serviceAccountName: emtaf-domain
+      containers:
+      - name: realestate-site
+        image: emtaf-realestate-site:dev
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3002
+        env:
+        - name: PORT
+          value: "3002"
+        - name: API_BASE
+          value: "http://realestate-service"
+        resources:
+          requests: {cpu: 25m, memory: 32Mi}
+          limits: {cpu: 200m, memory: 128Mi}
+        readinessProbe:
+          httpGet: {path: /, port: 3002}
+          initialDelaySeconds: 2
+          periodSeconds: 10
+        livenessProbe:
+          httpGet: {path: /, port: 3002}
+          initialDelaySeconds: 10
+          periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: realestate-site
+spec:
+  selector: {app: realestate-site}
+  ports:
+  - port: 80
+    targetPort: 3002

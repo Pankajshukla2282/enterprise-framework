@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-  [ValidateSet('all','hospital','school','college','hotel','realestate','tenant','demo','migrations')][string]$Target='all',
+  [ValidateSet('all','hospital','school','college','hotel','realestate','tenant','demo','migrations','hospital-site','school-site','college-site','hotel-site','realestate-site','skin-clinic-site','eecp-clinic-site','physiotherapy-site')][string]$Target='all',
   [ValidateSet('local','cloud')][string]$Mode='local',
   [string]$Registry='',
   [string]$Tag='dev',
@@ -13,8 +13,8 @@ $Root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 Set-Location $Root
 if (Get-Command node -ErrorAction SilentlyContinue) { node ./scripts/validate-workspaces.js } else { throw 'Node.js is required for workspace validation.' }
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) { throw 'Docker is required.' }
-$targets = if ($Target -eq 'all') { @('tenant','hospital','school','college','hotel','realestate','demo','migrations') } else { @($Target) }
-$map=@{tenant='services/tenant-service/Dockerfile';hospital='domains/hospital-service/Dockerfile';school='domains/school-service/Dockerfile';college='domains/college-service/Dockerfile';hotel='domains/hotel-service/Dockerfile';realestate='domains/realestate-service/Dockerfile';demo='demo-wireframe/Dockerfile';migrations='infra/migrations/Dockerfile'}
+$targets = if ($Target -eq 'all') { @('tenant','hospital','school','college','hotel','realestate','demo','migrations','hospital-site','school-site','college-site','hotel-site','realestate-site','skin-clinic-site','eecp-clinic-site','physiotherapy-site') } else { @($Target) }
+$map=@{tenant='services/tenant-service/Dockerfile';hospital='domains/hospital-service/Dockerfile';school='domains/school-service/Dockerfile';college='domains/college-service/Dockerfile';hotel='domains/hotel-service/Dockerfile';realestate='domains/realestate-service/Dockerfile';demo='demo-wireframe/Dockerfile';migrations='infra/migrations/Dockerfile';'hospital-site'='hospital-site/Dockerfile';'school-site'='school-site/Dockerfile';'college-site'='college-site/Dockerfile';'hotel-site'='hotel-site/Dockerfile';'realestate-site'='realestate-site/Dockerfile';'skin-clinic-site'='skin-clinic-site/Dockerfile';'eecp-clinic-site'='eecp-clinic-site/Dockerfile';'physiotherapy-site'='physiotherapy-site/Dockerfile'}
 foreach($name in $targets){
   $repo = switch($name){
     'tenant'{'emtaf-tenant-service'}
@@ -25,10 +25,18 @@ foreach($name in $targets){
     'realestate'{'emtaf-realestate-service'}
     'demo'{'emtaf-demo-wireframe'}
     'migrations'{'emtaf-migrations'}
+    'hospital-site'{'emtaf-hospital-site'}
+    'school-site'{'emtaf-school-site'}
+    'college-site'{'emtaf-college-site'}
+    'hotel-site'{'emtaf-hotel-site'}
+    'realestate-site'{'emtaf-realestate-site'}
+    'skin-clinic-site'{'emtaf-skin-clinic-site'}
+    'eecp-clinic-site'{'emtaf-eecp-clinic-site'}
+    'physiotherapy-site'{'emtaf-physiotherapy-site'}
   }
   $image = if($Mode -eq 'cloud') { if([string]::IsNullOrWhiteSpace($Registry)){throw 'Registry is required in cloud mode. Use -Registry ghcr.io/your-org (or your ECR/ACR/GAR repository).'} else { "$Registry/$repo`:$Tag" } } else { "$repo`:$Tag" }
   Write-Host "[EMTAF] Building $image"
-  docker build --provenance=$($Provenance.ToString().ToLower()) --sbom=$($Provenance.ToString().ToLower()) -f $map[$name] -t $image .
+  if ($name -like "*-site") { $siteDir = $name; docker build --provenance=$($Provenance.ToString().ToLower()) --sbom=$($Provenance.ToString().ToLower()) -f (Join-Path $Root "$siteDir/Dockerfile") -t $image (Join-Path $Root $siteDir) } else { docker build --provenance=$($Provenance.ToString().ToLower()) --sbom=$($Provenance.ToString().ToLower()) -f $map[$name] -t $image . }
   if($Load -and $Mode -eq 'local') {
     if(Get-Command kind -ErrorAction SilentlyContinue){ docker image inspect $image | Out-Null; kind load docker-image $image }
     elseif(Get-Command minikube -ErrorAction SilentlyContinue){ minikube image load $image }

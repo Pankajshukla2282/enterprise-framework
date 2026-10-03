@@ -6,7 +6,7 @@ spec:
  replicas: {{ $.Values.replicaCount }}
  selector: {matchLabels: {app: {{ $domain }}-service}}
  template:
-  metadata: {labels: {app: {{ $domain }}-service}}
+  metadata: {labels: {app.kubernetes.io/part-of: emtaf, app: {{ $domain }}-service}}
   spec:
    containers:
    - name: {{ $domain }}-service
@@ -15,8 +15,8 @@ spec:
      env:
      - {name: DATABASE_URL, valueFrom: {secretKeyRef: {name: emtaf-platform-secrets, key: DATABASE_URL}}}
      - {name: JWT_SECRET, valueFrom: {secretKeyRef: {name: emtaf-platform-secrets, key: JWT_SECRET}}}
-     - {name: REDIS_URL, value: redis://redis:6379}
-     - {name: KAFKA_BROKERS, value: redpanda:9092}
+     - {name: REDIS_URL, value: redis://redis.emtaf.svc.cluster.local.:6379}
+     - {name: KAFKA_BROKERS, value: redpanda.emtaf.svc.cluster.local.:9092}
      ports: [{containerPort: 3000}]
      resources: {{- toYaml $.Values.resources | nindent 6 }}
      startupProbe: {httpGet: {path: /health/live, port: 3000}, failureThreshold: 30, periodSeconds: 5}

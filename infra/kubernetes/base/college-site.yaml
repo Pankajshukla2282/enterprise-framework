@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: college-site
+  labels: {app: college-site}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: college-site}
+  template:
+    metadata:
+      labels: {app: college-site}
+    spec:
+      serviceAccountName: emtaf-domain
+      containers:
+      - name: college-site
+        image: emtaf-college-site:dev
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3004
+        env:
+        - name: PORT
+          value: "3004"
+        - name: API_BASE
+          value: "http://college-service"
+        resources:
+          requests: {cpu: 25m, memory: 32Mi}
+          limits: {cpu: 200m, memory: 128Mi}
+        readinessProbe:
+          httpGet: {path: /, port: 3004}
+          initialDelaySeconds: 2
+          periodSeconds: 10
+        livenessProbe:
+          httpGet: {path: /, port: 3004}
+          initialDelaySeconds: 10
+          periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: college-site
+spec:
+  selector: {app: college-site}
+  ports:
+  - port: 80
+    targetPort: 3004

@@ -1,24 +1,5 @@
-<!doctype html>
-<html lang="en">
-<head><meta charset="utf-8"><title>Demo Realty Group</title><link rel="stylesheet" href="styles.css"></head>
-<body>
-<header><h1>Demo Realty Group</h1><p>EMTAF demo property portal</p></header>
-<main>
-  <section class="cards" id="dashboard"></section>
-  <h2>Properties</h2>
-  <table id="properties"><thead><tr><th>Code</th><th>Name</th><th>Type</th><th>City</th></tr></thead><tbody></tbody></table>
-  <h2>Published listings</h2>
-  <table id="listings"><thead><tr><th>Title</th><th>Property</th><th>Unit</th><th>Price</th></tr></thead><tbody></tbody></table>
-</main>
-<script>
-fetch('/api/v1/realestate/dashboard').then(r=>r.json()).then(d=>{
-  document.getElementById('dashboard').innerHTML = Object.entries(d).map(([k,v])=>`<div class="card"><h3>${k}</h3><p>${v}</p></div>`).join('');
-}).catch(()=>{});
-fetch('/api/v1/realestate/properties').then(r=>r.json()).then(rows=>{
-  document.querySelector('#properties tbody').innerHTML = (rows||[]).map(r=>`<tr><td>${r.property_code}</td><td>${r.name}</td><td>${r.property_type}</td><td>${r.city}</td></tr>`).join('');
-}).catch(()=>{});
-fetch('/api/v1/realestate/listings').then(r=>r.json()).then(rows=>{
-  document.querySelector('#listings tbody').innerHTML = (rows||[]).map(r=>`<tr><td>${r.title}</td><td>${r.property_name??''}</td><td>${r.unit_no??''}</td><td>${r.price}</td></tr>`).join('');
-}).catch(()=>{});
-</script>
-</body></html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EMTAF Real Estate Management</title><link rel="stylesheet" href="/styles.css"></head><body>
+<div class="app"><aside class="sidebar"><div class="brand">EMTAF</div><div class="tenant" id="tenant">Tenant</div><nav class="nav" id="nav"></nav><div style="margin-top:20px"><button class="btn" id="logout">Clear token</button></div></aside>
+<main class="main"><div class="top"><div><h1>EMTAF Real Estate Management</h1><div class="sub">Multi-tenant property operations portal</div><div class="sub" id="identity"></div></div><div class="toolbar"><form id="tokenForm" style="display:flex;gap:7px"><input class="search" id="token" placeholder="Paste JWT token" autocomplete="off"><button class="btn primary">Connect</button></form></div></div><div id="content"></div></main></div>
+<div class="modal" id="modal"><div class="dialog" id="dialog"></div></div><div class="toast" id="toast"></div>
+<script>window.EMTAF_CONFIG={"dashboard":["properties","availableUnits","publishedListings","openLeads"],"modules":[{"id":"properties","label":"Properties","get":"/properties","columns":["property_code","name","property_type","city","state","status"],"create":{"method":"POST","path":"/properties","idempotency":1,"fields":[["property_code","Property code","text",1],["name","Name","text",1],["property_type","Type","text",1],["address_line1","Address","text",0],["city","City","text",0],["state","State","text",0],["country","Country","text",0],["postal_code","Postal code","text",0],["owner_user_id","Owner user ID","text",0]]}},{"id":"listings","label":"Listings","get":"/listings","columns":["title","property_name","unit_no","listing_type","price","status"],"create":{"method":"POST","path":"/listings","idempotency":1,"fields":[["property_id","Property ID","text",1],["unit_id","Unit ID","text",0],["listing_type","Listing type","select:sale,rent,lease",1],["title","Title","text",1],["description","Description","textarea",0],["price","Price","number",1],["agent_user_id","Agent user ID","text",0]]}},{"id":"units","label":"Units","get":null,"columns":[],"create":{"method":"POST","path":"/units","idempotency":1,"fields":[["property_id","Property ID","text",1],["unit_no","Unit No","text",1],["unit_type","Unit type","text",0],["area_sqft","Area sqft","number",0],["bedrooms","Bedrooms","number",0],["bathrooms","Bathrooms","number",0],["asking_price","Asking price","number",0]]}},{"id":"leads","label":"Leads","get":null,"columns":[],"create":{"method":"POST","path":"/leads","idempotency":1,"fields":[["name","Name","text",1],["phone","Phone","text",0],["email","Email","email",0],["source","Source","text",0],["assigned_agent_id","Agent user ID","text",0]]}},{"id":"viewings","label":"Viewings","get":null,"columns":[],"create":{"method":"POST","path":"/viewings","idempotency":1,"fields":[["listing_id","Listing ID","text",1],["lead_id","Lead ID","text",0],["scheduled_at","Scheduled at","datetime-local",1],["notes","Notes","textarea",0],["agent_user_id","Agent user ID","text",0]]}},{"id":"offers","label":"Offers","get":null,"columns":[],"create":{"method":"POST","path":"/offers","idempotency":1,"fields":[["listing_id","Listing ID","text",1],["amount","Offer amount","number",1]]}},{"id":"leases","label":"Leases","get":null,"columns":[],"create":{"method":"POST","path":"/leases","idempotency":1,"fields":[["unit_id","Unit ID","text",1],["tenant_user_id","Tenant user ID","text",1],["start_date","Start date","date",1],["end_date","End date","date",1],["rent","Rent","number",1],["deposit","Deposit","number",0]]}},{"id":"payments","label":"Payments","get":null,"columns":[],"create":{"method":"POST","path":"/payments","idempotency":1,"fields":[["lease_id","Lease ID","text",1],["amount","Amount","number",1],["payment_date","Payment date","date",0],["method","Method","select:cash,card,upi,bank",1],["reference","Reference","text",0]]}}]};window.EMTAF_CONFIG.base='/api/v1/realestate';</script><script src="/app.js"></script></body></html>

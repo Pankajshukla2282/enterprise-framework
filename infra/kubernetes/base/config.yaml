@@ -2,11 +2,11 @@ apiVersion: v1
 kind: ConfigMap
 metadata: {name: emtaf-platform-config, namespace: emtaf}
 data:
-  KAFKA_BROKERS: redpanda.emtaf.svc.cluster.local:9092
-  REDIS_URL: redis://redis.emtaf.svc.cluster.local:6379
+  KAFKA_BROKERS: redpanda.emtaf.svc.cluster.local.:9092
+  REDIS_URL: redis://redis.emtaf.svc.cluster.local.:6379
   DB_SSL: "false"
   OTEL_ENABLED: "true"
-  OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector.emtaf.svc.cluster.local:4318/v1/traces
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector.emtaf.svc.cluster.local.:4318/v1/traces
   NODE_ENV: production
   SERVICE_VERSION: "1.10.0"
 ---

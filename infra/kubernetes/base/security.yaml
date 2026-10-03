@@ -16,6 +16,8 @@ spec:
  egress:
  - to: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}}}]
    ports: [{protocol: UDP, port: 53}, {protocol: TCP, port: 53}]
+ - to: [{namespaceSelector: {}, podSelector: {matchLabels: {k8s-app: kube-dns}}}]
+   ports: [{protocol: UDP, port: 53}, {protocol: TCP, port: 53}]
  - to: [{podSelector: {matchLabels: {app: postgres}}}]
    ports: [{protocol: TCP, port: 5432}]
  - to: [{podSelector: {matchLabels: {app: redis}}}]
@@ -43,3 +45,110 @@ spec:
  ingress:
  - from: [{podSelector: {matchLabels: {app.kubernetes.io/part-of: emtaf}}}]
    ports: [{protocol: TCP, port: 5432}, {protocol: TCP, port: 6379}, {protocol: TCP, port: 9092}, {protocol: TCP, port: 4317}, {protocol: TCP, port: 4318}, {protocol: TCP, port: 13133}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-web-egress
+  namespace: emtaf
+spec:
+  podSelector:
+    matchExpressions:
+    - key: app
+      operator: In
+      values: [hospital-site, school-site, college-site, hotel-site, realestate-site]
+  policyTypes: [Egress]
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+    ports:
+    - {protocol: UDP, port: 53}
+    - {protocol: TCP, port: 53}
+  - to:
+    - namespaceSelector: {}
+      podSelector: {matchLabels: {k8s-app: kube-dns}}
+    ports:
+    - {protocol: UDP, port: 53}
+    - {protocol: TCP, port: 53}
+  - to:
+    - podSelector:
+        matchExpressions:
+        - key: app
+          operator: In
+          values: [hospital-service, school-service, college-service, hotel-service, realestate-service]
+    ports:
+    - {protocol: TCP, port: 3000}
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: skin-clinic-site-egress
+spec:
+  podSelector:
+    matchLabels: {app: skin-clinic-site}
+  policyTypes: [Egress]
+  egress:
+  - to:
+    - namespaceSelector: {}
+      podSelector: {matchLabels: {k8s-app: kube-dns}}
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  - to:
+    - podSelector: {matchLabels: {app: hospital-service}}
+    ports:
+    - protocol: TCP
+      port: 3000
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: eecp-clinic-site-egress
+spec:
+  podSelector:
+    matchLabels: {app: eecp-clinic-site}
+  policyTypes: [Egress]
+  egress:
+  - to:
+    - namespaceSelector: {}
+      podSelector: {matchLabels: {k8s-app: kube-dns}}
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  - to:
+    - podSelector: {matchLabels: {app: hospital-service}}
+    ports:
+    - protocol: TCP
+      port: 3000
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: physiotherapy-site-egress
+spec:
+  podSelector:
+    matchLabels: {app: physiotherapy-site}
+  policyTypes: [Egress]
+  egress:
+  - to:
+    - namespaceSelector: {}
+      podSelector: {matchLabels: {k8s-app: kube-dns}}
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  - to:
+    - podSelector: {matchLabels: {app: hospital-service}}
+    ports:
+    - protocol: TCP
+      port: 3000

@@ -40,8 +40,11 @@ if($Environment -in @('prod','staging') -and $ImageMode -eq 'cloud'){ if(-not (k
 kubectl create namespace $Namespace --dry-run=client -o yaml | kubectl apply -f - | Out-Null
 kubectl -n $Namespace delete job emtaf-migrations --ignore-not-found=true 2>$null | Out-Null
 kubectl apply -k $applyPath
+if($LASTEXITCODE -ne 0){throw "kubectl apply -k $applyPath failed."}
 if($Environment -ne 'prod'){ foreach($deployment in @('postgres','redis','redpanda')){ kubectl -n $Namespace rollout status "deployment/$deployment" --timeout=240s } }
+if(-not (kubectl -n $Namespace get job emtaf-migrations --ignore-not-found -o name)){throw "job/emtaf-migrations was not created by 'kubectl apply -k $applyPath'."}
 kubectl -n $Namespace wait --for=condition=complete job/emtaf-migrations --timeout=300s
-foreach($name in @('emtaf-tenant-service','hospital-service','school-service','college-service','hotel-service','realestate-service')){ if(kubectl -n $Namespace get deployment $name --ignore-not-found -o name){ kubectl -n $Namespace rollout status "deployment/$name" --timeout=180s } }
+if($LASTEXITCODE -ne 0){throw 'emtaf-migrations job did not complete.'}
+foreach($name in @('emtaf-tenant-service','hospital-service','school-service','college-service','hotel-service','realestate-service','hospital-site','school-site','college-site','hotel-site','realestate-site','skin-clinic-site','eecp-clinic-site','physiotherapy-site')){ if(kubectl -n $Namespace get deployment $name --ignore-not-found -o name){ kubectl -n $Namespace rollout status "deployment/$name" --timeout=180s } }
 if(kubectl -n $Namespace get deployment emtaf-demo-wireframe --ignore-not-found -o name){kubectl -n $Namespace rollout status deployment/emtaf-demo-wireframe --timeout=180s}
 Write-Host '[EMTAF] Started successfully.'

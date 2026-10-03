@@ -13,8 +13,16 @@ resources:
 - hotel-service.yaml
 - realestate-service.yaml
 - demo-wireframe.yaml
+- realestate-site.yaml
+- hotel-site.yaml
+- college-site.yaml
+- school-site.yaml
+- hospital-site.yaml
 - resource-limits.yaml
 - observability.yaml
 - otel-collector-config.yaml
 - migration-job.yaml
 - outbox-worker.yaml
+- skin-clinic-site.yaml
+- eecp-clinic-site.yaml
+- physiotherapy-site.yaml

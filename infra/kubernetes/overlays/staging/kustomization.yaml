@@ -28,6 +28,15 @@ images:
 - name: emtaf-migrations
   newName: REGISTRY/emtaf-migrations
   newTag: IMAGE_TAG
+- name: emtaf-skin-clinic-site
+  newName: REGISTRY/emtaf-skin-clinic-site
+  newTag: IMAGE_TAG
+- name: emtaf-eecp-clinic-site
+  newName: REGISTRY/emtaf-eecp-clinic-site
+  newTag: IMAGE_TAG
+- name: emtaf-physiotherapy-site
+  newName: REGISTRY/emtaf-physiotherapy-site
+  newTag: IMAGE_TAG
 
 patches:
 - path: remove-deployment-postgres.yaml

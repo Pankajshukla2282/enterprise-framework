@@ -11,7 +11,6 @@ done
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f /app/infra/postgres/005-production-hardening.sql
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f /app/infra/postgres/003-rls.sql
 psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f /app/infra/postgres/006-production-grade-events.sql
-psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f /app/infra/postgres/006-production-grade-events.sql
 if [ "${EMTAF_BOOTSTRAP_DEMO:-false}" = "true" ]; then
   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f /app/infra/postgres/004-bootstrap.sql
 fi

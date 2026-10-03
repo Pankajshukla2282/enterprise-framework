@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hotel-site
+  labels: {app: hotel-site}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: hotel-site}
+  template:
+    metadata:
+      labels: {app: hotel-site}
+    spec:
+      serviceAccountName: emtaf-domain
+      containers:
+      - name: hotel-site
+        image: emtaf-hotel-site:dev
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3005
+        env:
+        - name: PORT
+          value: "3005"
+        - name: API_BASE
+          value: "http://hotel-service"
+        resources:
+          requests: {cpu: 25m, memory: 32Mi}
+          limits: {cpu: 200m, memory: 128Mi}
+        readinessProbe:
+          httpGet: {path: /, port: 3005}
+          initialDelaySeconds: 2
+          periodSeconds: 10
+        livenessProbe:
+          httpGet: {path: /, port: 3005}
+          initialDelaySeconds: 10
+          periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hotel-site
+spec:
+  selector: {app: hotel-site}
+  ports:
+  - port: 80
+    targetPort: 3005

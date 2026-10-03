@@ -37,3 +37,15 @@ images:
 - name: emtaf-migrations
   newName: __EMTAF_REGISTRY__/emtaf-migrations
   newTag: __EMTAF_TAG__
+
+- name: emtaf-skin-clinic-site
+  newName: __EMTAF_REGISTRY__/emtaf-skin-clinic-site
+  newTag: __EMTAF_TAG__
+
+- name: emtaf-eecp-clinic-site
+  newName: __EMTAF_REGISTRY__/emtaf-eecp-clinic-site
+  newTag: __EMTAF_TAG__
+
+- name: emtaf-physiotherapy-site
+  newName: __EMTAF_REGISTRY__/emtaf-physiotherapy-site
+  newTag: __EMTAF_TAG__

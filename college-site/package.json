@@ -1,0 +1,1 @@
+{"name":"college-site","private":true,"type":"module","scripts":{"start":"node server.mjs","token":"node mint-dev-token.mjs college.admin@demo.local demo-college"}}

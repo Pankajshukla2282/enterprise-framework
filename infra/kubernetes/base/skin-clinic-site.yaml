@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: skin-clinic-site
+  labels: {app: skin-clinic-site}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: skin-clinic-site}
+  template:
+    metadata:
+      labels: {app: skin-clinic-site}
+    spec:
+      serviceAccountName: emtaf-domain
+      containers:
+      - name: skin-clinic-site
+        image: emtaf-skin-clinic-site:dev
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3006
+        env:
+        - name: PORT
+          value: "3006"
+        - name: API_BASE
+          value: "http://hospital-service"
+        resources:
+          requests: {cpu: 25m, memory: 32Mi}
+          limits: {cpu: 200m, memory: 128Mi}
+        readinessProbe:
+          httpGet: {path: /, port: 3006}
+          initialDelaySeconds: 2
+          periodSeconds: 10
+        livenessProbe:
+          httpGet: {path: /, port: 3006}
+          initialDelaySeconds: 10
+          periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: skin-clinic-site
+spec:
+  selector: {app: skin-clinic-site}
+  ports:
+  - port: 80
+    targetPort: 3006

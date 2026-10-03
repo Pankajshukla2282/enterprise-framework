@@ -1,0 +1,1 @@
+{"name":"eecp-clinic-site","private":true,"type":"module","scripts":{"start":"node server.mjs","token":"node mint-dev-token.mjs hospital.admin@demo.local demo-hospital"}}
